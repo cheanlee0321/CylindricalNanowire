@@ -15,6 +15,7 @@ gsl library is resuqired.
 Qmake flags
 
 > QMAKE_CXXFLAGS += -fopenmp -lgsl -lgslcblas
+
 > LIBS += -fopenmp -lgsl -lgslcblas
 
 
