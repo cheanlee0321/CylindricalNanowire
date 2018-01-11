@@ -5,15 +5,15 @@
 1. Eigen library is required.
 http://eigen.tuxfamily.org/index.php?title=Main_Page
 
-Download Eigen, copy folder "Eigen" to /usr/local/include  
+  Download Eigen, copy folder "Eigen" to /usr/local/include  
 
 2. openmp and gsl library is resuqired.
 
-install gsl library
+  Install gsl library
 
 > sudo apt-get install libgsl0ldbl
 
-enable openmp and gsl, Qmake flags
+  Enable openmp and gsl, Qmake flags
 
 > QMAKE_CXXFLAGS += -fopenmp -lgsl -lgslcblas
 
