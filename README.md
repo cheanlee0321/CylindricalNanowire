@@ -2,6 +2,22 @@
 
 # This simulator is still under contruction !!
 
+
+
+Eigen library is required.
+http://eigen.tuxfamily.org/index.php?title=Main_Page
+
+Download Eigen, copy folder "Eigen" to /usr/local/include  
+
+gsl library is resuqired.
+linux : sudo apt-get install libgsl0ldbl
+
+Qmake flags
+
+QMAKE_CXXFLAGS += -fopenmp -lgsl -lgslcblas
+LIBS += -fopenmp -lgsl -lgslcblas
+
+
 Nanowire simulator using cylindrical coordinate
 
 This simulator includes 2D Poisson solver, 2D Continuity equation, 1D Schrodinger Solver.
