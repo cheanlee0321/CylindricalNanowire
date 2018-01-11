@@ -9,9 +9,9 @@ const double Avogadro = 6.0221409e23;
 
 const double nm = 1e-9;		//Nanometer[m]
 
-const double hbar = 1.0545718 * pow(10,-34); // m^2*kg/s
+const double hbar = 1.0545718 * pow(10,-34); // m^2*kg/s or J*S
 const double hbar_eV = 6.582119514 * pow(10,-16); // eV*s
-const double h = 6.62606957 * pow(10,-34); // m^2*kg/s
+const double h = 6.62606957 * pow(10,-34); // m^2*kg/s or J*S
 const double h_eV = 4.135667516 * pow(10,-15); //eV*S
 const double kb=1.380650E-23; //Boltzmann constant (J/K)
 const double Tamb=300; //temperatureK

@@ -10,8 +10,8 @@ struct Semiconductor {
     double k;   // permitivitty
     double dop; // doping, -Nai Ndi
     double phi; // potential, Ei
-    double u;   // quasi-fermi level, exp(-Ef/Vt)
-    double v;   //                  , exp(Ef/Vt)
+    double u;   // quasi-fermi level, exp(-Ef/Vt), Ef=(-1)*log(u)
+    double v;   //                  , exp(Ef/Vt) , Ef=log(v)
     double r;   // recombination rate, SRH
     double rho; // charge density, C/cm3
     double Crho;// charge density, C/cm3
@@ -50,8 +50,8 @@ public:
 
     void CylQDD_PrintEigenValues(const char *path);
     void CylQDD_PrintEigenVectors(const char *path, int nb);
-    void CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index);
-    void CylQDD_PrintEigenVectorsFromStorage(const char *path, int nb, int pch_index);
+    void CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int mr_index, int angular_index);
+    void CylQDD_PrintEigenVectorsFromStorage(const char *path, int Eigenvalue_index, int pch_index, int mr_index, int angular_index);
 
 
 private:
@@ -62,6 +62,10 @@ private:
     double CylQDD_tauNCal(double dopping);
     double CylQDD_tauPCal(double dopping);
     double CylQDD_SRHrecomb(int i, int j);
+    double CylQDD_nr(int i, int j, int k);
+    double CylQDD_psi(int i, int j, int k);
+    double CylQDD_nk(int k, int r, int i, int j);
+    double CylQDD_Ek(int k, int i, int j);
 
     void CylQDD_DeclareHamiltonianArray();
     void CylQDD_AssignHamiltonianArray(int i);
@@ -86,7 +90,8 @@ protected:
     EigenSolver<MatrixXd> es;
 
     int DD_loop, maxIter;
-    int SBoundary, DBoundary, gridH;
+    int SBoundary, DBoundary, gridH, pch;
+    int m_angular, m_angular_index;
     double SimTolPoisson, SimTolEC, SimTolHC;
     double volS, volDe, volDs, volDi, volD, volB, volGe, volGs, volGi, volG, wfG;
     double bernXl,Na, Nd, Nai, Ndi, SiNc, SiNv;
@@ -95,7 +100,8 @@ protected:
     double Si_ni_m, Si_ni_cm, Si_ni_nm;
     double mun_semi, mup_semi, mun_sub, mup_sub;
     double *EigenValues_C, *EigenVectors_C;
-    double mr, mr1, mr2, gr1, gr2;
+    double mr, mrn, mr1, mr2, gr1, gr2;
+    double N1Dr1,N1Dr2;
 
 
 

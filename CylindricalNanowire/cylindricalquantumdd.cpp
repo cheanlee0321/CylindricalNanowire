@@ -1,11 +1,8 @@
 #include <fstream>
-#include <cmath>
-#include <math.h>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <iostream>
-#include <cstdlib>
-#include <time.h>
+#include <gsl/gsl_sf.h>
 
 
 #include "Parameter.h"
@@ -82,6 +79,12 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
     mr=m0;
     gr1=2;
     gr2=4;
+
+
+    m_angular_index=1;
+
+    N1Dr1=sqrt(2*mr1*kb*Tamb/(hbar*hbar))/M_PI;
+    N1Dr2=sqrt(2*mr2*kb*Tamb/(hbar*hbar))/M_PI;
 }
 
 void CylindricalQuantumDD::CylQDD_NewAndInitialize(){
@@ -403,6 +406,51 @@ double CylindricalQuantumDD::CylQDD_SRHrecomb(int i, int j){
     return (DDmaterial[pointer].u*DDmaterial[pointer].v-1)/DDmaterial[pointer].tau/(DDmaterial[pointer].u*exp(DDmaterial[pointer].phi/VT)+DDmaterial[pointer].v*exp((-1)*DDmaterial[pointer].phi/VT)+2);
 }
 
+double CylindricalQuantumDD::CylQDD_nr(int i, int j, int k){
+    //summation of k subband electron density at location i,j
+    //r1 r2 is not radius, it is radial vallety
+    //radius is j
+    //k is subband number
+    //first subband's eigenvalue index is 0, so k start from 0 here.
+
+    double n_sum=0;
+
+    //r1, gr1=2 degeneracy
+    for(int i=0;i<k;i++){
+        n_sum=n_sum+gr1*CylQDD_nk(k,1,i,j)*CylQDD_psi(i,j,k)*CylQDD_psi(i,j,k);
+    }
+
+    //r2, gr2=4 degeneracy
+    for(int i=0;i<k;i++){
+        n_sum=n_sum+gr2*CylQDD_nk(k,2,i,j)*CylQDD_psi(i,j,k)*CylQDD_psi(i,j,k);
+    }
+}
+
+double CylindricalQuantumDD::CylQDD_psi(int i, int j, int k){
+    //wave function amplitide at locatioin i,j
+    int pointer = (px)*(j) + (i);
+    return 0;
+}
+
+double CylindricalQuantumDD::CylQDD_nk(int k, int r, int i, int j){
+    //the electron number per unit length at k-th subband
+
+    int pointer = (px)*(j) + (i);
+
+    if(r==1){
+        return N1Dr1*gsl_sf_fermi_dirac_half(((-1)*log(DDmaterial[pointer].u)-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));
+    }else if(r==2){
+        return N1Dr2*gsl_sf_fermi_dirac_half(((-1)*log(DDmaterial[pointer].u)-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));;
+    }else{
+        cout << "undefined r for nk." <<endl;
+        exit(0);
+    }
+}
+
+double CylindricalQuantumDD::CylQDD_Ek(int k, int i, int j){
+    return 0;
+}
+
 void CylindricalQuantumDD::CylQDD_PoissonBC(){
 
 #pragma omp parallel for
@@ -453,33 +501,48 @@ void CylindricalQuantumDD::CylQDD_SchrodingerSolver(){
 
     //find the boundary of SD.
     CylQDD_FindSDboundary();
-    int pch=DBoundary-SBoundary+1;
+    pch=DBoundary-SBoundary+1;
 
     //We do not solve the point at center of the cylinder
     gridH=pr-1;
 
     //matrix for saving the result
+    //2 is mr1 and mr2
     EigenValues_C=new double [gridH*pch];
-    EigenVectors_C=new double [gridH*gridH*pch];
+    EigenVectors_C=new double [(1+2*m_angular_index)*2*gridH*gridH*pch];
 
     for(int i=SBoundary;i<=DBoundary;i++){
 
-        CylQDD_DeclareHamiltonianArray();
-        CylQDD_AssignHamiltonianArray(i);
-        //CylQDD_PrintMatrix(H_m, "H_m.txt");
+        //solve each angular momentum, m=0, +-1, +-2, +-3...
+        for(int ma=(-1)*m_angular_index;ma<=m_angular_index;ma++){
+            m_angular=ma;
 
-        CylQDD_MakeHamiltonianSymmetric();
+            //solve mr1 and mr2
+            mrn=1;
+            mr=mr1;
+            CylQDD_DeclareHamiltonianArray();
+            CylQDD_AssignHamiltonianArray(i);
+            CylQDD_MakeHamiltonianSymmetric();
+            CylQDD_SolveSchrodinger();
+            CylQDD_SortEigen_Merge();
+            CylQDD_SaveResult(i-SBoundary);
+
+            mrn=2;
+            mr=mr2;
+            CylQDD_DeclareHamiltonianArray();
+            CylQDD_AssignHamiltonianArray(i);
+            CylQDD_MakeHamiltonianSymmetric();
+            CylQDD_SolveSchrodinger();
+            CylQDD_SortEigen_Merge();
+            CylQDD_SaveResult(i-SBoundary);
+
+        }
+        //CylQDD_PrintMatrix(H_m, "H_m.txt");
         //CylQDD_PrintMatrix(T_m, "T_m.txt");
         //CylQDD_PrintMatrix(S_m, "S_m.txt");
         //CylQDD_PrintMatrix(L_m, "L_m.txt");
         //CylQDD_PrintMatrix(Linv_m, "Linv_m.txt");
         //CylQDD_PrintMatrix(HN_m, "HN_m.txt");
-
-        CylQDD_SolveSchrodinger();
-        CylQDD_SortEigen_Merge();
-        CylQDD_SaveResult(i-SBoundary);
-
-        break;
     }
 }
 
@@ -627,22 +690,27 @@ void CylindricalQuantumDD::CylQDD_MergeSort(int low, int high){
 
 void CylindricalQuantumDD::CylQDD_SaveResult(int pch_index){
 
-    /*  ______________________
-      /
-     / j eigenvalue
-    /_________________________ pch_index
-    |
-    | i eigenvector
-    |
-
-    */
+    /*    ______________________
+     *   /
+     *  / j eigenvalue
+     * /_________________________ pch_index
+     * |
+     * | i eigenvector
+     * |
+     *
+     * m_angular start from -(1)*m_angular_index, (m_angular+m_angular_index) shift to 0 for pointer.
+     *
+     * mrn is 1 and 2, (mrn-1) shift to 0 for pointer.
+     *
+     *
+     */
 
     for(int j=0;j<gridH;j++){
-        int ValuePointer=(gridH)*(pch_index)+j;
+        int ValuePointer=(m_angular+m_angular_index)*(2)*(gridH)*(pch)+(mrn-1)*(gridH)*(pch)+(gridH)*(pch_index)+j;
         EigenValues_C[ValuePointer]=EigenValues_m(j,0);
 
         for(int i=0;i<gridH;i++){
-            int VectorPointer=(gridH)*(gridH)*(pch_index)+(gridH)*(j)+i;
+            int VectorPointer=(m_angular+m_angular_index)*(2)*(gridH)*(gridH)*(pch)+(mrn-1)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pch_index)+(gridH)*(j)+i;
             EigenVectors_C[VectorPointer]=EigenVectors_m(i,j);
         }
     }
@@ -704,9 +772,12 @@ void CylindricalQuantumDD::CylQDD_PrintEigenVectors(const char *path, int nb){
     output.close();
 }
 
-void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index){
+void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int mr_index, int angular_index){
 
-    pch_index=0;
+
+    //mr_index, 1 or 2
+    //angular_index, 0, +-1, +-2, +-3...
+    //pch index set Sboundary as stating point 0
 
     fstream output;
 
@@ -714,17 +785,21 @@ void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, 
 
     output.precision(4);
 
+
     for(int i=0;i<gridH;i++){
-        int pointer = (gridH)*(pch_index)+i;
-        output << i+1 << '\t' << EigenValues_C[pointer]<<endl;
+        int ValuePointer=(angular_index+m_angular_index)*(2)*(gridH)*(pch)+(mr_index)*(gridH)*(pch)+(gridH)*(pch_index)+i;
+
+        output << i+1 << '\t' << EigenValues_C[ValuePointer]<<endl;
     }
 
     output.close();
 }
 
-void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path, int nb, int pch_index){
+void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path, int Eigenvalue_index, int pch_index, int mr_index, int angular_index){
 
-    pch_index=0;
+    //mr_index, 1 or 2
+    //angular_index, 0, +-1, +-2, +-3...
+    //pch index set Sboundary as stating point 0
 
     fstream output;
 
@@ -733,8 +808,9 @@ void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path,
     output.precision(4);
 
     for(int i=0;i<gridH;i++){
-        int pointer = (gridH)*(pch_index)+(gridH)*(nb)+i;
-        output << i+1 << '\t' <<EigenVectors_C[pointer]<<endl;
+        int VectorPointer=(angular_index+m_angular_index)*(2)*(gridH)*(gridH)*(pch)+(mr_index)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pch_index)+(gridH)*( Eigenvalue_index)+i;
+
+        output << i+1 << '\t' <<EigenVectors_C[VectorPointer]<<endl;
     }
 
     output.close();

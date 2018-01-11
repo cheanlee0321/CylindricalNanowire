@@ -22,18 +22,20 @@ int main()
     test->CylQDD_SchrodingerSolver();
     //test->CylQDD_PoissonSolver();
     //test->CylQDD_PrintMaterial("Poisson.txt");
-    test->CylQDD_PrintEigenValues("EigenValues.txt");
-    test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 0);
-    test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 1);
-    test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 2);
+    //test->CylQDD_PrintEigenValues("EigenValues.txt");
+    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 0);
+    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 1);
+    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 2);
     /*
     test->CylQDD_PrintEigenVectors("EigenVectors1.txt", 1);
     test->CylQDD_PrintEigenVectors("EigenVectors2.txt", 2);
     test->CylQDD_PrintEigenVectors("EigenVectors3.txt", 3);
     */
-    test->CylQDD_PrintEigenValuesFromStorage("EigenValuesS.txt", 500);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors0S.txt", 0, 500);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors1S.txt", 1, 500);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors2S.txt", 2, 500);
+    test->CylQDD_PrintEigenValuesFromStorage("EigenValuesS.txt",0,1,0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors0S.txt", 0, 0, 1, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors1S.txt", 1, 0, 1, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors2S.txt", 2, 0, 1, 0);
+    cout << "Simulation Success."<<endl;
+
 }
 

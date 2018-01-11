@@ -7,8 +7,8 @@ SOURCES += main.cpp \
     cylindricalcoordinate.cpp \
     cylindricalquantumdd.cpp
 
-QMAKE_CXXFLAGS += -fopenmp
-LIBS += -fopenmp
+QMAKE_CXXFLAGS += -fopenmp -lgsl -lgslcblas
+LIBS += -fopenmp -lgsl -lgslcblas
 
 HEADERS += \
     Parameter.h \

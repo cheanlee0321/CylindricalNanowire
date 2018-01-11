@@ -22,7 +22,7 @@ void CylindricalCoordinate::CylindricalMesh_StructurePatameterSet2D(){
     cout << "Device Structure:Cylindrical Nanowire." << endl;
     output << "Device Structure:Cylindrical Nanowire." << endl;
 
-    lx=500;
+    lx=100;
     radius=10;
     SDLength=lx/10;
     Tox=10;
