@@ -58,6 +58,10 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
     Si_ni_cm=Si_ni_m*1e-6;
     Si_ni_nm=Si_ni_m*1e-27;
 
+    HalfEgn=VT*log(SiNc/Si_ni_m);
+    HalfEgp=VT*log(SiNv/Si_ni_m);
+    Eg=HalfEgn+HalfEgp;
+
     ni_m=Si_ni_m;
     ni_cm=Si_ni_cm;
     ni_nm=Si_ni_nm;
@@ -75,16 +79,20 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
     double mt=0.19*m0;
     double ml=0.98*m0;
     mr1=mt;
-    mr2=2*mt*ml/(mt*ml);
-    mr=m0;
+    mr2=2*mt*ml/(mt+ml);
     gr1=2;
     gr2=4;
 
-
     m_angular_index=1;
 
-    N1Dr1=sqrt(2*mr1*kb*Tamb/(hbar*hbar))/M_PI;
+    N1Dr1=sqrt(2*mr1*kb*Tamb/(hbar*hbar))/M_PI; //unit is 1/m, state number per unit length
     N1Dr2=sqrt(2*mr2*kb*Tamb/(hbar*hbar))/M_PI;
+
+    Ksubband=3;
+
+
+    deltax=1/meshx[0];
+    deltar=1/meshr[0];
 }
 
 void CylindricalQuantumDD::CylQDD_NewAndInitialize(){
@@ -99,40 +107,14 @@ void CylindricalQuantumDD::CylQDD_InitialGuess(){
         for(int j=0;j<pr;j++){
 
             int pointer = (px)*(j) + (i);
-            /*
-            //P+
-            DDmaterial[pointer].dop=-Nai;
-            DDmaterial[pointer].phi=(volD-VT*log(0.5*Nai+sqrt(pow(0.5*Nai,2)+1)));
-            DDmaterial[pointer].u=exp((-1)*volD/VT);
-            DDmaterial[pointer].v=exp(volD/VT);
-            DDmaterial[pointer].mun=CylQDD_munCal(Tamb, 0, 1); // max Na Nd
-            DDmaterial[pointer].mup=CylQDD_mupCal(Tamb, 0, 1);
-            DDmaterial[pointer].tau=CylQDD_tauPCal(0);
-            DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
-
-            if(mesh[pointer].coordX<lx/2){
-                //N+
-                DDmaterial[pointer].dop=Ndi;
-                DDmaterial[pointer].phi=(volS+VT*log(0.5*Ndi+sqrt(pow(0.5*Ndi,2)+1)));
-                DDmaterial[pointer].u=exp((-1)*volS/VT);
-                DDmaterial[pointer].v=exp(volS/VT);
-                DDmaterial[pointer].mun=CylQDD_munCal(Tamb, 0, 1); // max Na Nd
-                DDmaterial[pointer].mup=CylQDD_mupCal(Tamb, 0, 1);
-                DDmaterial[pointer].tau=CylQDD_tauPCal(0);
-                DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
-            }
-            */
 
             //setup P
             //P
             DDmaterial[pointer].dop=-Nai;
             DDmaterial[pointer].phi=(volB-VT*log(0.5*Nai+sqrt(pow(0.5*Nai,2)+1)));
-            DDmaterial[pointer].u=exp((-1)*volB/VT);
-            DDmaterial[pointer].v=exp(volB/VT);
-            DDmaterial[pointer].mun=CylQDD_munCal(Tamb, 0, 1); // max Na Nd
-            DDmaterial[pointer].mup=CylQDD_mupCal(Tamb, 0, 1);
-            DDmaterial[pointer].tau=CylQDD_tauPCal(0);
-            DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
+            DDmaterial[pointer].psif=volB;
+            DDmaterial[pointer].mun=CylQDD_munCal(0, 1); // max Na Nd
+            DDmaterial[pointer].mup=CylQDD_mupCal(0, 1);
             DDmaterial[pointer].Type=1;
 
             //Source
@@ -140,12 +122,9 @@ void CylindricalQuantumDD::CylQDD_InitialGuess(){
                 //N+
                 DDmaterial[pointer].dop=NdPlusi;
                 DDmaterial[pointer].phi=(volS+VT*log(0.5*NdPlusi+sqrt(pow(0.5*NdPlusi,2)+1)));
-                DDmaterial[pointer].u=exp((-1)*volS/VT);
-                DDmaterial[pointer].v=exp(volS/VT);
-                DDmaterial[pointer].mun=CylQDD_munCal(Tamb, 0, 1); // max Na Nd
-                DDmaterial[pointer].mup=CylQDD_mupCal(Tamb, 0, 1);
-                DDmaterial[pointer].tau=CylQDD_tauPCal(0);
-                DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
+                DDmaterial[pointer].psif=volS;
+                DDmaterial[pointer].mun=CylQDD_munCal(0, 1); // max Na Nd
+                DDmaterial[pointer].mup=CylQDD_mupCal(0, 1);
                 DDmaterial[pointer].Type=2;
             }
 
@@ -154,19 +133,16 @@ void CylindricalQuantumDD::CylQDD_InitialGuess(){
                 //N+
                 DDmaterial[pointer].dop=NdPlusi;
                 DDmaterial[pointer].phi=(volD+VT*log(0.5*NdPlusi+sqrt(pow(0.5*NdPlusi,2)+1)));
-                DDmaterial[pointer].u=exp((-1)*volD/VT);
-                DDmaterial[pointer].v=exp(volD/VT);
-                DDmaterial[pointer].mun=CylQDD_munCal(Tamb, 0, 1); // max Na Nd
-                DDmaterial[pointer].mup=CylQDD_mupCal(Tamb, 0, 1);
-                DDmaterial[pointer].tau=CylQDD_tauPCal(0);
-                DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
+                DDmaterial[pointer].psif=volD;
+                DDmaterial[pointer].mun=CylQDD_munCal(0, 1); // max Na Nd
+                DDmaterial[pointer].mup=CylQDD_mupCal(0, 1);
                 DDmaterial[pointer].Type=2;
             }
         }
     }
 }
 
-double CylindricalQuantumDD::CylQDD_PoissonSolver(){
+double CylindricalQuantumDD::CylQDD_PoissonSolverClassical(){
 
     DD_loop=0;
 
@@ -175,7 +151,7 @@ double CylindricalQuantumDD::CylQDD_PoissonSolver(){
     do{
         DD_loop++;
 
-        errPhi=CylQDD_PoissonGaussSeidel();
+        errPhi=CylQDD_PoissonGaussSeidelClassical();
 
         if(errPhi_max < errPhi) {errPhi_max=errPhi;}
 
@@ -190,7 +166,7 @@ double CylindricalQuantumDD::CylQDD_PoissonSolver(){
     return errPhi_max;
 }
 
-double CylindricalQuantumDD::CylQDD_PoissonGaussSeidel(){
+double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelClassical(){
 
     double max_val=0;
 
@@ -202,9 +178,7 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidel(){
 
             double phik=DDmaterial[pointer].phi;
 
-            DDmaterial[pointer].phi=CylQDD_PoissonGaussSeidelInner(i,j);
-
-            DDmaterial[pointer].r=CylQDD_SRHrecomb(i,j);
+            DDmaterial[pointer].phi=CylQDD_PoissonGaussSeidelInnerClassical(i,j);
 
             double error=abs(DDmaterial[pointer].phi-phik);
 
@@ -221,8 +195,10 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidel(){
 
 }
 
-double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelInner(int i, int j){
+double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelInnerClassical(int i, int j){
 
+    //using 3D DOS and simplified fermi-dirac integral
+    //hole is not considered
     //this is FDM, not FVM
 
     int pointer = (px)*(j) + (i);
@@ -231,26 +207,114 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelInner(int i, int j){
     int pointer_jp =   (px)*(j+1) + (i);
     int pointer_jn =   (px)*(j-1) + (i);
 
-    double deltax=1/meshx[0];
-    double deltar=1/meshr[0];
-
     double phik=DDmaterial[pointer].phi;
-    double f=ni_nm*(DDmaterial[pointer].u*exp(phik/VT)-DDmaterial[pointer].v*exp((-1)*phik/VT)-DDmaterial[pointer].dop)*(-1)*q0/e0/DDmaterial[pointer].k;
-    double df=ni_nm*(DDmaterial[pointer].u*exp(phik/VT)+DDmaterial[pointer].v*exp((-1)*phik/VT))*(-1)*q0/e0/DDmaterial[pointer].k/VT;
+
+    //rho is charge number, Laplace(phi)=(-q)/epsilon*rho
+    double rho=ni_nm*(exp((DDmaterial[pointer].psif+phik)/VT)-DDmaterial[pointer].dop)*(-1)*q0/e0/DDmaterial[pointer].k;
+
+    double drho=ni_nm*exp((DDmaterial[pointer].psif+phik)/VT)*(-1)*q0/e0/DDmaterial[pointer].k/VT;
 
     double Aij=(DDmaterial[pointer_in].phi+DDmaterial[pointer_ip].phi)/(deltax*deltax)
             +DDmaterial[pointer_jn].phi*(1/(deltar*deltar)-1/mesh[pointer].coordR*1/(2*deltar))
             +DDmaterial[pointer_jp].phi*(1/(deltar*deltar)+1/mesh[pointer].coordR*1/(2*deltar));
 
-    //if k is constant, this term is 0. Cylindrical nanowire k = 11.7 (constant).
-    double Bij=0;//(DDmaterial[pointer_jp].k-DDmaterial[pointer_jn].k)/(2*deltar)*(DDmaterial[pointer_jp].k-DDmaterial[pointer_jn].k)/(2*deltar)*1/DDmaterial[pointer].k;
+    //if k is constant, this term is 0. Cylindrical nanowire k = 11.7, SiO2 at outer boundary k = 3.9
+    double Bij=(DDmaterial[pointer_jp].k-DDmaterial[pointer_jn].k)/(2*deltar)*(DDmaterial[pointer_jp].phi-DDmaterial[pointer_jn].phi)/(2*deltar)*1/DDmaterial[pointer].k;
 
-    double SUMij=2*(1/(deltax*deltax)+1/(deltar*deltar));
+    double SUMij=CylQDD_SUMIJ(i,j);
 
-    double Phi=(Aij+Bij+f-df*phik)/(SUMij-df);
+    double Phi=(Aij+Bij+rho-drho*phik)/(SUMij-drho);
 
     return Phi;
 }
+
+double CylindricalQuantumDD::CylQDD_PoissonSolverQD(){
+
+    DD_loop=0;
+
+    double errPhi(0),errPhi_max(0);
+
+    do{
+        DD_loop++;
+
+        errPhi=CylQDD_PoissonGaussSeidelQD();
+
+        if(errPhi_max < errPhi) {errPhi_max=errPhi;}
+
+        if(DD_loop%1000==0)
+        cout <<"PS:"<< DD_loop <<"\t" <<errPhi<<"\t"<<errPhi_max<<endl;
+
+        if(DD_loop%100000==0)
+        CylQDD_PrintMaterial("Poisson_temp.txt");
+
+    }while(errPhi>SimTolPoisson);
+
+    return errPhi_max;
+}
+
+double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelQD(){
+
+    double max_val=0;
+
+#pragma omp parallel for reduction(max:max_val)
+    for (int i=1; i<px-1; i++) {
+        for (int j=1; j<pr-1; j++) {
+
+            int pointer = (px)*(j) + (i);
+
+            double phik=DDmaterial[pointer].phi;
+
+            DDmaterial[pointer].phi=CylQDD_PoissonGaussSeidelInnerQD(i,j);
+
+            double error=abs(DDmaterial[pointer].phi-phik);
+
+            error=error/(abs(phik)+1);
+
+            if(error>max_val)
+                max_val=error;
+        }
+    }
+
+    CylQDD_PoissonBC();
+
+    return max_val;
+
+}
+
+double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelInnerQD(int i, int j){
+
+    //using 3D DOS
+    //hole is not considered
+    //this is FDM, not FVM
+
+    int pointer = (px)*(j) + (i);
+    int pointer_ip =   (px)*(j) + (i+1);
+    int pointer_in =   (px)*(j) + (i-1);
+    int pointer_jp =   (px)*(j+1) + (i);
+    int pointer_jn =   (px)*(j-1) + (i);
+
+    double phik=DDmaterial[pointer].phi;
+
+    //rho is charge number, Laplace(phi)=(-q)/epsilon*rho
+
+    DDmaterial[pointer].nr=CylQDD_nr(i,j);
+
+    double rho=DDmaterial[pointer].nr;
+
+    double Aij=(DDmaterial[pointer_in].phi+DDmaterial[pointer_ip].phi)/(deltax*deltax)
+            +DDmaterial[pointer_jn].phi*(1/(deltar*deltar)-1/mesh[pointer].coordR*1/(2*deltar))
+            +DDmaterial[pointer_jp].phi*(1/(deltar*deltar)+1/mesh[pointer].coordR*1/(2*deltar));
+
+    //if k is constant, this term is 0. Cylindrical nanowire k = 11.7, SiO2 at outer boundary k = 3.9
+    double Bij=(DDmaterial[pointer_jp].k-DDmaterial[pointer_jn].k)/(2*deltar)*(DDmaterial[pointer_jp].phi-DDmaterial[pointer_jn].phi)/(2*deltar)*1/DDmaterial[pointer].k;
+
+    double SUMij=2*(1/(deltax*deltax)+1/(deltar*deltar));
+
+    double Phi=(Aij+Bij+rho)/(SUMij);
+
+    return Phi;
+}
+
 
 void CylindricalQuantumDD::CylQDD_BernoulliX(){
 
@@ -285,7 +349,7 @@ void CylindricalQuantumDD::CylQDD_PrintMaterial(string path){
     output.precision(6);
 
 
-    output << "X(1)\tR(2)\tK(3)\tdop(4)\tphi(5)\tu(6)\tv(7)\tr(8)\trho(9)\tmun(10)\tmup(11)\ttau(12)\tEx(13)\tEy(14)\tType(15)\tCrho(16)#"<<endl;
+    output << "X(1)\tR(2)\tK(3)\tdop(4)\tphi(5)\tpsif(6)\trho(7)\tmun(8)\tmup(9)\tEx(10)\tEr(11)\tType(12)\tCrho(13)\tnr(14)#"<<endl;
     output << "[nm]\t[nm]\t[nm]\t#"<<endl;
     output <<"--------------------------------------------------------------------------------------------------------------------------------#" << endl;
 
@@ -294,10 +358,10 @@ void CylindricalQuantumDD::CylQDD_PrintMaterial(string path){
             int pointer =(px)*(j) + (i);
             output << mesh[pointer].coordX << '\t' << mesh[pointer].coordR << '\t'
                    << DDmaterial[pointer].k << '\t' <<DDmaterial[pointer].dop << '\t' <<DDmaterial[pointer].phi << '\t'
-                   << DDmaterial[pointer].u << '\t' << DDmaterial[pointer].v << '\t' << DDmaterial[pointer].r << '\t'
+                   << DDmaterial[pointer].psif << '\t'
                    << DDmaterial[pointer].rho << '\t'<< DDmaterial[pointer].mun << '\t'<< DDmaterial[pointer].mup << '\t'
-                   << DDmaterial[pointer].tau << '\t'<< DDmaterial[pointer].Ex << '\t'<< DDmaterial[pointer].Ey << '\t'
-                   << DDmaterial[pointer].Type << '\t'<< DDmaterial[pointer].Crho <<endl;
+                   << DDmaterial[pointer].Ex << '\t'<< DDmaterial[pointer].Er << '\t'
+                   << DDmaterial[pointer].Type << '\t'<< DDmaterial[pointer].Crho<< '\t'<< DDmaterial[pointer].nr <<endl;
 
         }
     }
@@ -324,10 +388,10 @@ void CylindricalQuantumDD::CylQDD_ReadMaterial(string path){
             int pointer =(px)*(j) + (i);
             input >> buffer >> buffer
                   >> DDmaterial[pointer].k >> DDmaterial[pointer].dop >> DDmaterial[pointer].phi
-                  >> DDmaterial[pointer].u >> DDmaterial[pointer].v >> DDmaterial[pointer].r
+                  >> DDmaterial[pointer].psif
                   >> DDmaterial[pointer].rho >> DDmaterial[pointer].mun >> DDmaterial[pointer].mup
-                  >> DDmaterial[pointer].tau >> DDmaterial[pointer].Ex >> DDmaterial[pointer].Ey
-                  >> DDmaterial[pointer].Type >> DDmaterial[pointer].Crho;
+                  >> DDmaterial[pointer].Ex >> DDmaterial[pointer].Er
+                  >> DDmaterial[pointer].Type >> DDmaterial[pointer].Crho >> DDmaterial[pointer].nr;
         }
     }
 
@@ -336,27 +400,35 @@ void CylindricalQuantumDD::CylQDD_ReadMaterial(string path){
 
 void CylindricalQuantumDD::CylQDD_Initialize(){
 
-    #pragma omp parallel for
-    for(int i=0;i<L;i++){
-        DDmaterial[i].Crho=0;
-        DDmaterial[i].dop=0;
-        DDmaterial[i].Ex=0;
-        DDmaterial[i].Ey=0;
-        DDmaterial[i].Ez=0;
-        DDmaterial[i].k=11.7;
-        DDmaterial[i].mun=0;
-        DDmaterial[i].mup=0;
-        DDmaterial[i].phi=0;
-        DDmaterial[i].r=0;
-        DDmaterial[i].rho=0;
-        DDmaterial[i].tau=0;
-        DDmaterial[i].Type=0;
-        DDmaterial[i].u=0;
-        DDmaterial[i].v=0;
+
+#pragma omp parallel for
+    for(int i=0;i<px;i++){
+        for(int j=0;j<pr;j++){
+
+            int pointer = (px)*(j) + (i);
+            DDmaterial[pointer].Crho=0;
+            DDmaterial[pointer].dop=0;
+            DDmaterial[pointer].Ex=0;
+            DDmaterial[pointer].Er=0;
+            DDmaterial[pointer].nr=0;
+            DDmaterial[pointer].k=11.7;
+            DDmaterial[pointer].mun=0;
+            DDmaterial[pointer].mup=0;
+            DDmaterial[pointer].phi=0;
+            DDmaterial[pointer].rho=0;
+            DDmaterial[pointer].Type=0;
+            DDmaterial[pointer].psif=0;
+        }
+    }
+
+
+    for (int i=0; i<px; i++) {
+        int pointer = (px)*(pr-1) + (i);
+        DDmaterial[pointer].k=3.9;
     }
 }
 
-double CylindricalQuantumDD::CylQDD_munCal(double T, double dopping, int f){
+double CylindricalQuantumDD::CylQDD_munCal(double dopping, int f){
 
     // 1200 cm^2/v.s  0.12 m^2/v.s  0.12*1e18 nm^2/v.s
 
@@ -371,7 +443,7 @@ double CylindricalQuantumDD::CylQDD_munCal(double T, double dopping, int f){
     //return (88*pow(T/300,-0.57)+1252*pow(T/300,-2.33)/(1+N/(1.432e23*pow(T/300,2.546))))*1e-4;
 }
 
-double CylindricalQuantumDD::CylQDD_mupCal(double T,double dopping, int f){
+double CylindricalQuantumDD::CylQDD_mupCal(double dopping, int f){
 
     // 1200 cm^2/v.s  0.12 m^2/v.s  0.12*1e18 nm^2/v.s
 
@@ -399,31 +471,28 @@ double CylindricalQuantumDD::CylQDD_tauPCal(double dopping){
     return 3.94e-4/(1+dopping/1e21);
 }
 
-double CylindricalQuantumDD::CylQDD_SRHrecomb(int i, int j){
-
-    int pointer = (px)*(j) + (i);
-    //http://www.iue.tuwien.ac.at/phd/entner/node11.html
-    return (DDmaterial[pointer].u*DDmaterial[pointer].v-1)/DDmaterial[pointer].tau/(DDmaterial[pointer].u*exp(DDmaterial[pointer].phi/VT)+DDmaterial[pointer].v*exp((-1)*DDmaterial[pointer].phi/VT)+2);
-}
-
-double CylindricalQuantumDD::CylQDD_nr(int i, int j, int k){
-    //summation of k subband electron density at location i,j
-    //r1 r2 is not radius, it is radial vallety
-    //radius is j
-    //k is subband number
-    //first subband's eigenvalue index is 0, so k start from 0 here.
+double CylindricalQuantumDD::CylQDD_nr(int i, int j){
+    /*
+     * summation of k subband electron density at location i,j
+     * r1 r2 is not radius, it is radial valley for electron mass
+     * radius is related to j
+     * k is subband number
+     * first subband's eigenvalue index is 0, so k start from 0 here.
+     *
+     */
 
     double n_sum=0;
 
     //r1, gr1=2 degeneracy
-    for(int i=0;i<k;i++){
+    for(int k=0;k<Ksubband;k++){
         n_sum=n_sum+gr1*CylQDD_nk(k,1,i,j)*CylQDD_psi(i,j,k)*CylQDD_psi(i,j,k);
     }
 
     //r2, gr2=4 degeneracy
-    for(int i=0;i<k;i++){
+    for(int k=0;k<Ksubband;k++){
         n_sum=n_sum+gr2*CylQDD_nk(k,2,i,j)*CylQDD_psi(i,j,k)*CylQDD_psi(i,j,k);
     }
+
 }
 
 double CylindricalQuantumDD::CylQDD_psi(int i, int j, int k){
@@ -432,15 +501,15 @@ double CylindricalQuantumDD::CylQDD_psi(int i, int j, int k){
     return 0;
 }
 
-double CylindricalQuantumDD::CylQDD_nk(int k, int r, int i, int j){
+double CylindricalQuantumDD::CylQDD_nk(int k, int mr, int i, int j){
     //the electron number per unit length at k-th subband
 
     int pointer = (px)*(j) + (i);
 
-    if(r==1){
-        return N1Dr1*gsl_sf_fermi_dirac_half(((-1)*log(DDmaterial[pointer].u)-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));
-    }else if(r==2){
-        return N1Dr2*gsl_sf_fermi_dirac_half(((-1)*log(DDmaterial[pointer].u)-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));;
+    if(mr==1){
+        return N1Dr1*gsl_sf_fermi_dirac_half((DDmaterial[pointer].psif-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));
+    }else if(mr==2){
+        return N1Dr2*gsl_sf_fermi_dirac_half((DDmaterial[pointer].psif-CylQDD_Ek(k,i,j))*q0/(kb*Tamb));;
     }else{
         cout << "undefined r for nk." <<endl;
         exit(0);
@@ -460,18 +529,13 @@ void CylindricalQuantumDD::CylQDD_PoissonBC(){
             int pointer2 = (px)*(pr-2) + (i);
 
             DDmaterial[pointer1].phi=DDmaterial[pointer2].phi;
-            /*
+
             if( mesh[pointer1].coordX > SDLength && mesh[pointer1].coordX < lx-SDLength ){
-
                 double rstep=abs(mesh[pointer1].coordR-mesh[pointer2].coordR);
-                double qfactor=Si_permi/SiO2_permi*Tox/rstep;
-
+                double qfactor=Tox/rstep;
                 DDmaterial[pointer1].phi=(volG+qfactor*DDmaterial[pointer2].phi)/(1.0+qfactor);
             }
-            else{
-                DDmaterial[pointer1].phi=DDmaterial[pointer2].phi;
-            }
-            */
+
             pointer1 = (px)*(0) + (i);
             pointer2 = (px)*(1) + (i);
 
@@ -495,48 +559,64 @@ void CylindricalQuantumDD::CylQDD_FindSDboundary(){
         }
     }
     //cout << SBoundary << " "<< DBoundary<<endl;
+
+    pch=DBoundary-SBoundary+1;
+
+    //We do not solve the point at center of the cylinder
+    gridH=pr-1;
 }
 
 void CylindricalQuantumDD::CylQDD_SchrodingerSolver(){
 
     //find the boundary of SD.
     CylQDD_FindSDboundary();
-    pch=DBoundary-SBoundary+1;
-
-    //We do not solve the point at center of the cylinder
-    gridH=pr-1;
-
-    //matrix for saving the result
-    //2 is mr1 and mr2
-    EigenValues_C=new double [gridH*pch];
-    EigenVectors_C=new double [(1+2*m_angular_index)*2*gridH*gridH*pch];
+    CylQDD_DeclareStorageArray();
 
     for(int i=SBoundary;i<=DBoundary;i++){
+        DebugMarker=i;
+
+        EigenValSheet_m = MatrixXd::Zero((1+2*m_angular_index)*2*gridH,1);
+        EigenVecSheet_m = MatrixXd::Zero(gridH,(1+2*m_angular_index)*2*gridH);
 
         //solve each angular momentum, m=0, +-1, +-2, +-3...
-        for(int ma=(-1)*m_angular_index;ma<=m_angular_index;ma++){
-            m_angular=ma;
+        for(int ma=0;ma<=m_angular_index;ma++){
 
-            //solve mr1 and mr2
-            mrn=1;
-            mr=mr1;
+            //solve mr1
             CylQDD_DeclareHamiltonianArray();
-            CylQDD_AssignHamiltonianArray(i);
+            CylQDD_AssignHamiltonianArray(ma, 1, i);
             CylQDD_MakeHamiltonianSymmetric();
-            CylQDD_SolveSchrodinger();
+            CylQDD_SolveSchrodinger(ma, 1, i);
             CylQDD_SortEigen_Merge();
-            CylQDD_SaveResult(i-SBoundary);
+            CylQDD_NormalizeEigenvector();
+            CylQDD_SaveResultC1(ma, 1, i);
 
-            mrn=2;
-            mr=mr2;
+            //solve mr2
             CylQDD_DeclareHamiltonianArray();
-            CylQDD_AssignHamiltonianArray(i);
+            CylQDD_AssignHamiltonianArray(ma, 2, i);
             CylQDD_MakeHamiltonianSymmetric();
-            CylQDD_SolveSchrodinger();
+            CylQDD_SolveSchrodinger(ma, 2, i);
             CylQDD_SortEigen_Merge();
-            CylQDD_SaveResult(i-SBoundary);
-
+            CylQDD_NormalizeEigenvector();
+            CylQDD_SaveResultC1(ma, 2, i);
         }
+
+        /*
+        if(DebugMarker==SBoundary){
+            cout << EigenValSheet_m << endl << endl;
+        }
+        */
+
+        //Full Sorting
+        CylQDD_SortEigen_Merge_Sheet();
+
+        //save sorted sheet val and vec
+        for(int ma=0;ma<=m_angular_index;ma++){
+            CylQDD_SaveResultC2(ma, 1, i);
+            CylQDD_SaveResultC2(ma, 2, i);
+        }
+
+
+
         //CylQDD_PrintMatrix(H_m, "H_m.txt");
         //CylQDD_PrintMatrix(T_m, "T_m.txt");
         //CylQDD_PrintMatrix(S_m, "S_m.txt");
@@ -546,6 +626,24 @@ void CylindricalQuantumDD::CylQDD_SchrodingerSolver(){
     }
 }
 
+void CylindricalQuantumDD::CylQDD_DeclareStorageArray(){
+
+    //matrix for saving the result
+
+    //C1 is sorted result for each angular and mr
+    //                              angular          mr  i val
+    EigenValues_C1=new double [(1+2*m_angular_index)*2*pch*gridH];
+    //                              angular           mr  i val   vec
+    EigenVectors_C1=new double [(1+2*m_angular_index)*2*pch*gridH*gridH];
+
+
+    //C2 is sorted result for each i grid (sheet)
+    //                              angular          mr  i val
+    EigenValues_C2=new double [(1+2*m_angular_index)*2*pch*gridH];
+    //                              angular           mr  i val   vec
+    EigenVectors_C2=new double [(1+2*m_angular_index)*2*pch*gridH*gridH];
+
+}
 
 void CylindricalQuantumDD::CylQDD_DeclareHamiltonianArray(){
 
@@ -556,24 +654,31 @@ void CylindricalQuantumDD::CylQDD_DeclareHamiltonianArray(){
     EigenVectorsN_m = MatrixXd::Zero(gridH,gridH);
 }
 
-void CylindricalQuantumDD::CylQDD_AssignHamiltonianArray(int i){
+void CylindricalQuantumDD::CylQDD_AssignHamiltonianArray(int ma, int mrn, int pchi){
 
     /*
+     * Assign Hamiltonian array of each i grid
      * uniform mesh is assumed, deltax = deltar = 1 nm
      * the potential unit is eV.
      * In the reference the j index start from 1.
      * So here we cahnge the j in the reference to j+1 in the for loop. (But not H_m index)
-     * Since we do not solve the point at center of the cylinder. The j is start from the 2 in the reference
+     * Since we do not solve-SBoundary the point at center of the cylinder. The j is start from the 2 in the reference
      * Therefore, the (j-1) in the reference is (j+1-1+1)=(j+1) in the for loop here.
      *
      */
-
-    double deltar = 1/meshr[0];
-    m_angular=0;
+    double mr=0;
+    if(mrn==1){
+        mr=mr1;
+    }else if(mrn==2){
+        mr=mr2;
+    }else{
+        cout << "undifined mrn"<< endl;
+        exit(0);
+    }
 
     for (int j=0;j<gridH;j++){
 
-        H_m(j,j) = hbar*hbar_eV/(mr*deltar*1e-9*deltar*1e-9) + CylQDD_Potential(i,j+1);// + hbar*hbar_eV*m_angular*m_angular/(2*mr*(j+1)*(j+1)*deltar*deltar);
+        H_m(j,j) = hbar*hbar_eV/(mr*deltar*1e-9*deltar*1e-9) + CylQDD_Potential(pchi,j+1) + hbar*hbar_eV*ma*ma/(2*mr*(j+1)*(j+1)*deltar*1e-9*deltar*1e-9);
 
         if (j==0){
             H_m(j,j)=H_m(j,j) + (-1)*hbar*hbar_eV/(2*mr*deltar*1e-9*deltar*1e-9) + hbar*hbar_eV/(4*mr*deltar*1e-9*deltar*1e-9*(j+1));
@@ -606,10 +711,11 @@ void CylindricalQuantumDD::CylQDD_MakeHamiltonianSymmetric(){
     HN_m=Linv_m*S_m*Linv_m;
 }
 
-void CylindricalQuantumDD::CylQDD_SolveSchrodinger(){
+void CylindricalQuantumDD::CylQDD_SolveSchrodinger(int ma, int mr, int pchi){
 
     es.compute(HN_m);
 
+    //Storage the result
     #pragma omp parallel for
     for(int i=0;i<gridH;i++){
         EigenValues_m(i,0)=real(es.eigenvalues()(i));
@@ -618,13 +724,34 @@ void CylindricalQuantumDD::CylQDD_SolveSchrodinger(){
     #pragma omp parallel for
     for(int i=0;i<gridH;i++){
         for(int j=0;j<gridH;j++){
-            EigenVectorsN_m(i,j)=real(es.eigenvectors()(i,j));
+            EigenVectorsN_m(j,i)=real(es.eigenvectors()(j,i));
         }
     }
 
+    //Reverse back
     EigenVectors_m=Linv_m*EigenVectorsN_m;
-    /*
-    */
+
+    //save value to sheet array
+    for(int i=0;i<gridH;i++){
+        EigenValSheet_m(CylQDD_SheetValpointer(ma,mr,i),0)=EigenValues_m(i,0);
+    }
+    //save vector to sheet array
+    for(int i=0;i<gridH;i++){
+        for(int j=0;j<gridH;j++){
+            EigenVecSheet_m(j,CylQDD_SheetValpointer(ma,mr,i))=EigenVectors_m(j,i);
+        }
+    }
+
+    if(ma>0){
+        for(int i=0;i<gridH;i++){
+            EigenValSheet_m(CylQDD_SheetValpointer((-1)*ma,mr,i),0)=EigenValues_m(i,0);
+        }
+        for(int i=0;i<gridH;i++){
+            for(int j=0;j<gridH;j++){
+                EigenVecSheet_m(j,CylQDD_SheetValpointer((-1)*ma,mr,i))=EigenVectors_m(j,i);
+            }
+        }
+    }
 }
 
 void CylindricalQuantumDD::CylQDD_SortEigen_Merge(){
@@ -632,7 +759,17 @@ void CylindricalQuantumDD::CylQDD_SortEigen_Merge(){
     //Merge Sort
     //cout << "Sorting Eigenvalues and Eigenvectors."<<endl;
     CylQDD_MergeSort(0,gridH-1);
+}
 
+void CylindricalQuantumDD::CylQDD_MergeSort(int low, int high){
+
+    int mid;
+    if(low<high){
+        mid=(low+high)/2;
+        CylQDD_MergeSort(low,mid);
+        CylQDD_MergeSort(mid+1,high);
+        CylQDD_Merge(low,mid,high);
+    }
 }
 
 void CylindricalQuantumDD::CylQDD_Merge(int low,int mid,int high){
@@ -677,41 +814,171 @@ void CylindricalQuantumDD::CylQDD_Merge(int low,int mid,int high){
     }
 }
 
-void CylindricalQuantumDD::CylQDD_MergeSort(int low, int high){
+void CylindricalQuantumDD::CylQDD_SortEigen_Merge_Sheet(){
+
+    //Merge Sort
+    //cout << "Sorting Eigenvalues and Eigenvectors."<<endl;
+    CylQDD_MergeSort_Sheet(0,(1+2*m_angular_index)*2*gridH-1);
+}
+
+void CylindricalQuantumDD::CylQDD_MergeSort_Sheet(int low, int high){
 
     int mid;
     if(low<high){
         mid=(low+high)/2;
-        CylQDD_MergeSort(low,mid);
-        CylQDD_MergeSort(mid+1,high);
-        CylQDD_Merge(low,mid,high);
+        CylQDD_MergeSort_Sheet(low,mid);
+        CylQDD_MergeSort_Sheet(mid+1,high);
+        CylQDD_Merge_Sheet(low,mid,high);
     }
 }
 
-void CylindricalQuantumDD::CylQDD_SaveResult(int pch_index){
+void CylindricalQuantumDD::CylQDD_Merge_Sheet(int low,int mid,int high){
+
+    int h,i,j,k;
+    MatrixXd b((1+2*m_angular_index)*2*gridH,1);
+    MatrixXd temp_b(gridH,(1+2*m_angular_index)*2*gridH);
+    h=low;
+    i=low;
+    j=mid+1;
+
+    while((h<=mid)&&(j<=high)){
+        if(EigenValSheet_m(h,0)<=EigenValSheet_m(j,0)){
+            b(i,0)=EigenValSheet_m(h,0);
+            temp_b.col(i)=EigenVecSheet_m.col(h);
+            h++;
+        }
+        else{
+            b(i,0)=EigenValSheet_m(j,0);
+            temp_b.col(i)=EigenVecSheet_m.col(j);
+            j++;
+        }
+        i++;
+    }
+    if(h>mid){
+        for(k=j;k<=high;k++){
+            b(i,0)=EigenValSheet_m(k,0);
+            temp_b.col(i)=EigenVecSheet_m.col(k);
+            i++;
+        }
+    }
+    else{
+        for(k=h;k<=mid;k++){
+            b(i,0)=EigenValSheet_m(k,0);
+            temp_b.col(i)=EigenVecSheet_m.col(k);
+            i++;
+        }
+    }
+    for(k=low;k<=high;k++){
+        EigenValSheet_m(k,0)=b(k,0);
+        EigenVecSheet_m.col(k)=temp_b.col(k);
+    }
+}
+
+
+void CylindricalQuantumDD::CylQDD_NormalizeEigenvector(){
+
+    //j is eigen
+    for(int j=0;j<gridH;j++){
+
+        double sum=0;
+
+        for(int i=0;i<gridH;i++){
+            sum=sum+i*deltar*EigenVectors_m(i,j)*EigenVectors_m(i,j)*deltar;
+        }
+        sum=sum*2*M_PI;
+
+        //cout << "sum="<<sum<<endl;
+
+        //Normalize Factor = 1/sqrt(sum)
+
+        EigenVectors_m.col(j)=EigenVectors_m.col(j)/sqrt(sum);
+
+        /*
+        double check=0;
+        for(int i=0;i<gridH;i++){
+            check=check+i*deltar*EigenVectors_m(i,j)*EigenVectors_m(i,j)*deltar;
+        }
+        check=check*2*M_PI;
+        cout << "check="<<check<<endl;
+        */
+    }
+}
+
+void CylindricalQuantumDD::CylQDD_SaveResultC1(int ma, int mr, int pchi){
 
     /*    ______________________
      *   /
      *  / j eigenvalue
-     * /_________________________ pch_index
+     * /_________________________ pchindex
      * |
      * | i eigenvector
      * |
      *
-     * m_angular start from -(1)*m_angular_index, (m_angular+m_angular_index) shift to 0 for pointer.
+     * m_angular start from (-1)*m_angular_index, (m_angular+m_angular_index) shift to 0 for pointer.
      *
      * mrn is 1 and 2, (mrn-1) shift to 0 for pointer.
      *
      *
      */
 
+    pchi=pchi-SBoundary;
+
     for(int j=0;j<gridH;j++){
-        int ValuePointer=(m_angular+m_angular_index)*(2)*(gridH)*(pch)+(mrn-1)*(gridH)*(pch)+(gridH)*(pch_index)+j;
-        EigenValues_C[ValuePointer]=EigenValues_m(j,0);
+        int ValuePointer=CylQDD_C1Valpointer(ma,mr,pchi,j);
+        EigenValues_C1[ValuePointer]=EigenValues_m(j,0);
 
         for(int i=0;i<gridH;i++){
-            int VectorPointer=(m_angular+m_angular_index)*(2)*(gridH)*(gridH)*(pch)+(mrn-1)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pch_index)+(gridH)*(j)+i;
-            EigenVectors_C[VectorPointer]=EigenVectors_m(i,j);
+            int VectorPointer=CylQDD_C1Vecpointer(ma,mr,pchi,j,i);
+            EigenVectors_C1[VectorPointer]=EigenVectors_m(i,j);
+        }
+    }
+
+    if(ma > 0){
+        /*
+        if(DebugMarker==SBoundary){
+            cout << ma << endl << endl;
+        }
+        */
+        for(int j=0;j<gridH;j++){
+            int ValuePointer=CylQDD_C1Valpointer((-1)*ma,mr,pchi,j);
+            EigenValues_C1[ValuePointer]=EigenValues_m(j,0);
+
+            for(int i=0;i<gridH;i++){
+                int VectorPointer=CylQDD_C1Vecpointer((-1)*ma,mr,pchi,j,i);
+                EigenVectors_C1[VectorPointer]=EigenVectors_m(i,j);
+            }
+        }
+    }
+}
+
+void CylindricalQuantumDD::CylQDD_SaveResultC2(int ma, int mr, int pchi){
+
+    pchi=pchi-SBoundary;
+
+    for(int j=0;j<gridH;j++){
+        int ValuePointer=CylQDD_C1Valpointer(ma,mr,pchi,j);
+        EigenValues_C2[ValuePointer]=EigenValSheet_m(j,0);
+
+        for(int i=0;i<gridH;i++){
+            int VectorPointer=CylQDD_C1Vecpointer(ma,mr,pchi,j,i);
+            EigenVectors_C2[VectorPointer]=EigenVecSheet_m(i,j);
+        }
+    }
+
+    if(ma > 0){
+        /*
+        if(DebugMarker==SBoundary){
+            cout << ma << endl << endl;
+        }
+        */
+        for(int j=0;j<gridH;j++){
+            int ValuePointer=CylQDD_C1Valpointer((-1)*ma,mr,pchi,j);
+            EigenValues_C2[ValuePointer]=EigenValSheet_m(j,0);
+
+            for(int i=0;i<gridH;i++){
+                int VectorPointer=CylQDD_C1Vecpointer((-1)*ma,mr,pchi,j,i);
+                EigenVectors_C2[VectorPointer]=EigenVecSheet_m(i,j);
+            }
         }
     }
 }
@@ -772,10 +1039,10 @@ void CylindricalQuantumDD::CylQDD_PrintEigenVectors(const char *path, int nb){
     output.close();
 }
 
-void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int mr_index, int angular_index){
+void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, int pchindex, int mrndex, int angular_index){
 
 
-    //mr_index, 1 or 2
+    //mrndex, 1 or 2
     //angular_index, 0, +-1, +-2, +-3...
     //pch index set Sboundary as stating point 0
 
@@ -787,17 +1054,17 @@ void CylindricalQuantumDD::CylQDD_PrintEigenValuesFromStorage(const char *path, 
 
 
     for(int i=0;i<gridH;i++){
-        int ValuePointer=(angular_index+m_angular_index)*(2)*(gridH)*(pch)+(mr_index)*(gridH)*(pch)+(gridH)*(pch_index)+i;
+        int ValuePointer=(angular_index+m_angular_index)*(2)*(gridH)*(pch)+(mrndex-1)*(gridH)*(pch)+(gridH)*(pchindex)+i;
 
-        output << i+1 << '\t' << EigenValues_C[ValuePointer]<<endl;
+        output << i+1 << '\t' << EigenValues_C1[ValuePointer]<<endl;
     }
 
     output.close();
 }
 
-void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path, int Eigenvalue_index, int pch_index, int mr_index, int angular_index){
+void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path, int pchindex, int Eigenvalue_index, int mrndex, int angular_index){
 
-    //mr_index, 1 or 2
+    //mrndex, 1 or 2
     //angular_index, 0, +-1, +-2, +-3...
     //pch index set Sboundary as stating point 0
 
@@ -808,10 +1075,184 @@ void CylindricalQuantumDD::CylQDD_PrintEigenVectorsFromStorage(const char *path,
     output.precision(4);
 
     for(int i=0;i<gridH;i++){
-        int VectorPointer=(angular_index+m_angular_index)*(2)*(gridH)*(gridH)*(pch)+(mr_index)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pch_index)+(gridH)*( Eigenvalue_index)+i;
+        int VectorPointer=(angular_index+m_angular_index)*(2)*(gridH)*(gridH)*(pch)+(mrndex-1)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pchindex)+(gridH)*( Eigenvalue_index)+i;
 
-        output << i+1 << '\t' <<EigenVectors_C[VectorPointer]<<endl;
+        output << i+1 << '\t' <<EigenVectors_C1[VectorPointer]<<endl;
     }
 
     output.close();
+}
+
+int CylindricalQuantumDD::CylQDD_SheetValpointer(int ma, int mr, int ki){
+
+    //pass angular number 0, +-1, +-2...
+    //mr 1, 2
+    //eigen index 0,1,2
+
+    ma=ma+m_angular_index;
+    mr=mr-1;
+    return (ma)*(2)*(gridH)+(mr)*(gridH)+ki;
+}
+
+int CylindricalQuantumDD::CylQDD_C1Valpointer(int ma, int mr, int pchi, int ki){
+
+    //pass angular number 0, +-1, +-2...
+    //mr 1, 2
+    //eigen index 0,1,2
+
+    ma=ma+m_angular_index;
+    mr=mr-1;
+    return (ma)*(2)*(gridH)*(pch)+(mr)*(gridH)*(pch)+(gridH)*(pchi)+ki;
+}
+
+int CylindricalQuantumDD::CylQDD_C1Vecpointer(int ma, int mr, int pchi, int ki, int psi){
+
+    //pass angular number 0, +-1, +-2...
+    //mr 1, 2
+    //eigen index 0,1,2
+
+    ma=ma+m_angular_index;
+    mr=mr-1;
+    return (ma)*(2)*(gridH)*(gridH)*(pch)+(mr)*(gridH)*(gridH)*(pch)+(gridH)*(gridH)*(pchi)+(gridH)*(ki)+psi;
+}
+
+int CylindricalQuantumDD::CylQDD_C2Valpointer(int ma, int mr, int pchi, int ki){
+
+    //pass angular number 0, +-1, +-2...
+    //mr 1, 2
+    //eigen index 0,1,2
+
+    ma=ma+m_angular_index;
+    mr=mr-1;
+    return (ma)*(2)*(gridH)+(mr)*(gridH)+pchi;
+}
+
+
+
+double CylindricalQuantumDD::CylQDD_ECSolver(){
+
+    DD_loop=0;
+    double errEC(0),errEC_max(0);
+
+    do{
+        DD_loop++;
+
+        errEC=CylQDD_ECGaussSeidel();
+
+        if(errEC_max < errEC) {errEC_max=errEC;}
+
+        if(DD_loop%1000==0)
+        cout <<"EC:"<< DD_loop <<"\t" <<errEC <<"\t"<<errEC_max<<endl;
+
+    }while(errEC>SimTolEC);
+
+    return errEC_max;
+
+}
+
+double CylindricalQuantumDD::CylQDD_ECGaussSeidel(){
+
+    double  max_val=0;
+
+#pragma omp parallel for reduction(max:max_val)
+    for (int i=1; i<px-1; i++) {
+        for (int j=1; j<pr-1; j++) {
+
+            int pointer = (px)*(j) + (i);
+
+            double psifk = DDmaterial[pointer].psif;
+
+            DDmaterial[pointer].psif=CylQDD_ECGaussSeidelInner(i,j);
+
+            double error=VT*abs(log(DDmaterial[pointer].psif)-log(psifk));
+
+            error=error/(abs(psifk)+1);
+
+            if(error>max_val)
+                max_val=error;
+        }
+    }
+
+    CylQDD_ECBC();
+
+    return max_val;
+
+}
+
+double CylindricalQuantumDD::CylQDD_ECGaussSeidelInner(int i, int j){
+
+
+    return (CylQDD_GIJ(i,j)+CylQDD_CIJ(i,j))/CylQDD_SUMIJ(i,j);
+}
+/*
+double CylindricalQuantumDD::CylQDD_SRHrecomb(int i, int j){
+
+    int pointer = (px)*(j) + (i);
+    //http://www.iue.tuwien.ac.at/phd/entner/node11.html
+    return 0;(DDmaterial[pointer].u*DDmaterial[pointer].v-1)/DDmaterial[pointer].tau/(DDmaterial[pointer].u*exp(DDmaterial[pointer].phi/VT)+DDmaterial[pointer].v*exp((-1)*DDmaterial[pointer].phi/VT)+2);
+}
+*/
+
+void CylindricalQuantumDD::CylQDD_ECBC(){
+
+#pragma omp parallel for
+        for (int i=0; i<px; i++) {
+
+            int pointer1 = (px)*(pr-1) + (i);
+            int pointer2 = (px)*(pr-2) + (i);
+
+            DDmaterial[pointer1].phi=DDmaterial[pointer2].phi;
+
+            if( mesh[pointer1].coordX > SDLength && mesh[pointer1].coordX < lx-SDLength ){
+                double rstep=abs(mesh[pointer1].coordR-mesh[pointer2].coordR);
+                double qfactor=Tox/rstep;
+                DDmaterial[pointer1].phi=(volG+qfactor*DDmaterial[pointer2].phi)/(1.0+qfactor);
+            }
+
+            pointer1 = (px)*(0) + (i);
+            pointer2 = (px)*(1) + (i);
+
+            DDmaterial[pointer1].phi=DDmaterial[pointer2].phi;
+        }
+}
+
+double CylindricalQuantumDD::CylQDD_GIJ(int i, int j){
+    return VT*CylQDD_DIJ(i,j)*CylQDD_EIJ(i,j);
+}
+
+double CylindricalQuantumDD::CylQDD_CIJ(int i, int j){
+
+    int pointer = (px)*(j) + (i);
+    int pointer_ip =   (px)*(j) + (i+1);
+    int pointer_in =   (px)*(j) + (i-1);
+    int pointer_jp =   (px)*(j+1) + (i);
+    int pointer_jn =   (px)*(j-1) + (i);
+
+    return (DDmaterial[pointer_in].psif+DDmaterial[pointer_ip].psif)/(deltax*deltax)
+            +DDmaterial[pointer_jn].psif*(1/(deltar*deltar)-1/((deltar*j)*2*deltar))
+            +DDmaterial[pointer_jp].psif*(1/(deltar*deltar)+1/((deltar*j)*2*deltar));
+
+}
+
+double CylindricalQuantumDD::CylQDD_DIJ(int i, int j){
+
+    int pointer_ip =   (px)*(j) + (i+1);
+    int pointer_in =   (px)*(j) + (i-1);
+
+    return (DDmaterial[pointer_ip].psif-DDmaterial[pointer_in].psif)/(2*deltax)
+            *((DDmaterial[pointer_ip].phi-DDmaterial[pointer_ip].psif)-(DDmaterial[pointer_in].phi-DDmaterial[pointer_in].psif))/(2*deltax);
+}
+
+double CylindricalQuantumDD::CylQDD_EIJ(int i, int j){
+
+    int pointer_jp =   (px)*(j+1) + (i);
+    int pointer_jn =   (px)*(j-1) + (i);
+
+    return (DDmaterial[pointer_jp].psif-DDmaterial[pointer_jp].psif)/(2*deltar)
+            *((DDmaterial[pointer_jp].phi-DDmaterial[pointer_jp].psif)-(DDmaterial[pointer_jn].phi-DDmaterial[pointer_jn].psif))/(2*deltar);
+}
+
+double CylindricalQuantumDD::CylQDD_SUMIJ(int i, int j){
+
+    return 2*(1/(deltax*deltax)+1/(deltar*deltar));
 }

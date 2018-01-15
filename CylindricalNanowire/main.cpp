@@ -15,27 +15,42 @@ int main()
     test->CylQDD_NewAndInitialize();
     test->CylQDD_InitialGuess();
     //test->CylQDD_PrintMaterial("Initial.txt");
-    //test->CylQDD_PoissonSolver();
-    //test->CylQDD_PrintMaterial("Poisson.txt");
+    test->CylQDD_PoissonSolverClassical();
+    test->CylQDD_PrintMaterial("PoissonClassical.txt");
+    test->CylQDD_ECSolver();
+    //test->CylQDD_PoissonSolverQD();
+    //test->CylQDD_PrintMaterial("PoissonQD.txt");
     //test->CylQDD_ReadMaterial("Poisson.txt");
     //test->CylQDD_PrintMaterial("Read.txt");
-    test->CylQDD_SchrodingerSolver();
-    //test->CylQDD_PoissonSolver();
-    //test->CylQDD_PrintMaterial("Poisson.txt");
-    //test->CylQDD_PrintEigenValues("EigenValues.txt");
-    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 0);
-    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 1);
-    //test->CylQDD_PrintEigenVectors("EigenVectors0.txt", 2);
+    //test->CylQDD_SchrodingerSolver();
+
     /*
-    test->CylQDD_PrintEigenVectors("EigenVectors1.txt", 1);
-    test->CylQDD_PrintEigenVectors("EigenVectors2.txt", 2);
-    test->CylQDD_PrintEigenVectors("EigenVectors3.txt", 3);
+    //                                                                   pch V  mr ang
+    test->CylQDD_PrintEigenValuesFromStorage("EigenValues_mr1_ang0.txt",   0,    1, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector0_mr1_ang0.txt", 0, 0, 1, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector1_mr1_ang0.txt", 0, 1, 1, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector2_mr1_ang0.txt", 0, 2, 1, 0);
+
+    //                                                                   pch V  mr ang
+    test->CylQDD_PrintEigenValuesFromStorage("EigenValues_mr2_ang0.txt",   0,    2, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector0_mr2_ang0.txt", 0, 0, 2, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector1_mr2_ang0.txt", 0, 1, 2, 0);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector2_mr2_ang0.txt", 0, 2, 2, 0);
+
+    //                                                                   pch V  mr ang
+    test->CylQDD_PrintEigenValuesFromStorage("EigenValues_mr1_ang1.txt",   0,    1, 1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector0_mr1_ang1.txt", 0, 0, 1, 1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector1_mr1_ang1.txt", 0, 1, 1, 1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector2_mr1_ang1.txt", 0, 2, 1, 1);
+
+    //                                                                   pch V  mr ang
+    test->CylQDD_PrintEigenValuesFromStorage("EigenValues_mr1_ang-1.txt",   0,    1, -1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector0_mr1_ang-1.txt", 0, 0, 1, -1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector1_mr1_ang-1.txt", 0, 1, 1, -1);
+    test->CylQDD_PrintEigenVectorsFromStorage("EigenVector2_mr1_ang-1.txt", 0, 2, 1, -1);
+
     */
-    test->CylQDD_PrintEigenValuesFromStorage("EigenValuesS.txt",0,1,0);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors0S.txt", 0, 0, 1, 0);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors1S.txt", 1, 0, 1, 0);
-    test->CylQDD_PrintEigenVectorsFromStorage("EigenVectors2S.txt", 2, 0, 1, 0);
-    cout << "Simulation Success."<<endl;
+
 
 }
 

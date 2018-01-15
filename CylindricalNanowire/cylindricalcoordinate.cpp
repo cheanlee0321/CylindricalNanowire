@@ -19,7 +19,7 @@ void CylindricalCoordinate::CylindricalMesh_StructurePatameterSet2D(){
     fstream output;
     output.open("MeshParameter2D.txt", fstream::out | fstream::trunc);
 
-    cout << "Device Structure:Cylindrical Nanowire." << endl;
+    //cout << "Device Structure:Cylindrical Nanowire." << endl;
     output << "Device Structure:Cylindrical Nanowire." << endl;
 
     lx=100;
