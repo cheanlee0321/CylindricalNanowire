@@ -1,6 +1,20 @@
 # CylindricalNanowire
 
-# This simulator is still under contruction !!
+Nanowire simulator using cylindrical coordinate
+
+# The simulator is still under contruction !!
+
+This simulator includes 2D Poisson solver, 2D Continuity equation, 1D Schrodinger Solver.
+
+Couple the Poisson solver and Continuity equation = Classical DD model
+
+Couple the Poisson solver and Schrodinger solver = Schrodinger-Poisson Solver
+
+Couple the Poisson solver, Schrodinger solver and Continuity equation = Quantum DD model
+
+This simulator using Robin type boundary to simulate the surface potential. It does NOT explicitly simulate the oxide.
+> Reference : A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
+
 
 1. Eigen library is required.
 http://eigen.tuxfamily.org/index.php?title=Main_Page
@@ -20,15 +34,3 @@ http://eigen.tuxfamily.org/index.php?title=Main_Page
 > LIBS += -fopenmp -lgsl -lgslcblas
 
 
-Nanowire simulator using cylindrical coordinate
-
-This simulator includes 2D Poisson solver, 2D Continuity equation, 1D Schrodinger Solver.
-
-Couple the Poisson solver and Continuity equation = Classical DD model
-
-Couple the Poisson solver and Schrodinger solver = Schrodinger-Poisson Solver
-
-Couple the Poisson solver, Schrodinger solver and Continuity equation = Quantum DD model
-
-This simulator using Robin type boundary to simulate the surface potential, we do not explicitly simulate the oxide.
-> Reference : A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
