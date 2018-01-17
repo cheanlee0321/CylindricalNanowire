@@ -18,7 +18,23 @@ So it could simulate the wave function penetration in Tox.
 Btw, I have no idea how to handle 1/r when r=0 in cylindrical coordinate.
 So the the Hamiltonian matrix is not include r=0.
 
-> Reference : A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
+Schrodinger solver & Poisson solver
+
+> Reference 1 : A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
+
+
+Electron Continuity solver
+
+> Reference 2 : Finite difference discretization of semiconductor drift-diffusion equations for nanowire solar cells.pdf
+
+Th electron continuity solver from ref.1 does not work, because they didn't use Scharfetter-Gummel method.
+
+Therefore electron continuity solver is come from ref.2.
+
+Scharfetter-Gummel method
+
+> Reference 3 : ScharfGum.pdf
+
 
 1. Eigen library is required.
 http://eigen.tuxfamily.org/index.php?title=Main_Page
