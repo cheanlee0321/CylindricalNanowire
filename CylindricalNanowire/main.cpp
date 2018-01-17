@@ -15,9 +15,13 @@ int main()
     test->CylQDD_NewAndInitialize();
     test->CylQDD_InitialGuess();
     //test->CylQDD_PrintMaterial("Initial.txt");
-    test->CylQDD_PoissonSolverClassical();
-    test->CylQDD_PrintMaterial("PoissonClassical.txt");
-    test->CylQDD_ECSolver();
+    //test->CylQDD_PoissonSolverClassical();
+    //test->CylQDD_PrintMaterial("PoissonClassical.txt");
+    //test->CylQDD_ReadMaterial("PoissonClassical.txt");
+    //test->CylQDD_ECSolver();
+    //test->CylQDD_PrintMaterial("ECClassical.txt");
+    test->CylQDD_IdVG();
+    test->CylQDD_IdVD();
     //test->CylQDD_PoissonSolverQD();
     //test->CylQDD_PrintMaterial("PoissonQD.txt");
     //test->CylQDD_ReadMaterial("Poisson.txt");

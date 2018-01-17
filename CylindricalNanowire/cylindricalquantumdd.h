@@ -29,6 +29,9 @@ public:
     CylindricalQuantumDD();
     ~CylindricalQuantumDD();
 
+    void CylQDD_IdVG();
+    void CylQDD_IdVD();
+
     void CylQDD_ParameterSet();
     void CylQDD_NewAndInitialize();
     void CylQDD_InitialGuess();
@@ -39,7 +42,6 @@ public:
     void CylQDD_SchrodingerSolver();
 
     double CylQDD_ECSolver();
-
     //Tool Function
     void CylQDD_PrintMaterial(string path);
     void CylQDD_ReadMaterial(string path);
@@ -50,6 +52,7 @@ public:
     void CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int mr_index, int angular_index);
     void CylQDD_PrintEigenVectorsFromStorage(const char *path, int pch_index, int Eigenvalue_index, int mr_index, int angular_index);
 
+    void CylQDD_Update_nr();
 
 private:
 
@@ -61,11 +64,13 @@ private:
 
     double CylQDD_ECGaussSeidel();
     double CylQDD_ECGaussSeidelInner(int i, int j);
-    double CylQDD_GIJ(int i, int j);
-    double CylQDD_CIJ(int i, int j);
-    double CylQDD_DIJ(int i, int j);
-    double CylQDD_EIJ(int i, int j);
-    double CylQDD_SUMIJ(int i, int j);
+    double CylQDD_G(int i, int j);
+    double CylQDD_A(int i, int j);
+    double CylQDD_B(int i, int j);
+    double CylQDD_C(int i, int j);
+    double CylQDD_D(int i, int j);
+    double CylQDD_E(int i, int j);
+    double CylQDD_SUM();
 
     void CylQDD_FindSDboundary();
 
@@ -108,6 +113,14 @@ private:
     int CylQDD_C1Valpointer(int ma, int mr, int pchi, int ki);
     int CylQDD_C1Vecpointer(int ma, int mr, int pchi, int ki, int psi);
     int CylQDD_C2Valpointer(int ma, int mr, int pchi, int ki);
+
+    void CylQDD_EfieldCalculation();
+    void CylQDD_RhoCalculation();
+
+    void CylQDD_Jcal();
+    void CylQDD_JcalSn_Nanowire(double &JDn);
+    void CylQDD_JcalDn_Nanowire(double &JDn);
+
 
 protected:
 
