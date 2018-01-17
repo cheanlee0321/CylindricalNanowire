@@ -32,9 +32,9 @@ private:
 protected:
 
     Mesh *mesh;
-    int Mx, Mr, px, pr, *xb, *rb, L;
+    int Mx, Mr, px, prA, prB, *xb, *rb, L;
     double *xpin, *rpin, *meshx, *meshr;
-    double lx=0, radius=0, SDLength=0, Tox=0;
+    double lx=0, lr=0, radius=0, SDLength=0, Tox=0;
 
 };
 

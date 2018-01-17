@@ -19,7 +19,7 @@ struct Semiconductor {
     double Ex;  // electric field
     double Er;
     double nr;
-    double Type;//Type 1=channel, 2=SD;
+    double Type;//Type 1=channel, 2=SD, 2=Tox;
 };
 
 class CylindricalQuantumDD : public CylindricalCoordinate
@@ -117,7 +117,7 @@ private:
     void CylQDD_EfieldCalculation();
     void CylQDD_RhoCalculation();
 
-    void CylQDD_Jcal();
+    void CylQDD_Jcal(string path);
     void CylQDD_JcalSn_Nanowire(double &JDn);
     void CylQDD_JcalDn_Nanowire(double &JDn);
 

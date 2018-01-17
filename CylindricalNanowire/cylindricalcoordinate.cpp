@@ -25,7 +25,8 @@ void CylindricalCoordinate::CylindricalMesh_StructurePatameterSet2D(){
     lx=100;
     radius=10;
     SDLength=lx/10;
-    Tox=10;
+    Tox=4;
+    lr=radius+Tox;
 
     output << "Nanowire Length="<<lx<< endl;
     output << "Nanowire Radius="<<radius<< endl;
@@ -42,12 +43,13 @@ void CylindricalCoordinate::CylindricalMesh_MeshParameterSet2D(){
     // set xr pins
     xpin=new double [Mx+1];
     rpin=new double [Mr+1];
+
     for(int i=0;i<Mx+1;i++){
         xpin[i]=0+lx/Mx*i;
     }
 
     for(int i=0;i<Mr+1;i++){
-        rpin[i]=0+radius/Mr*i;
+        rpin[i]=0+lr/Mr*i;
     }
 
     // set xr mesh steps
@@ -64,14 +66,14 @@ void CylindricalCoordinate::CylindricalMesh_MeshParameterSet2D(){
 
 
     //set initial value(minimum)
-    px=pr=1;
+    px=prB=1;
 
     // points calculation
     for(int i=0;i<Mx;i++){
         px=px+meshx[i]*(xpin[i+1]-xpin[i]);
     }
     for(int i=0;i<Mr;i++){
-        pr=pr+meshr[i]*(rpin[i+1]-rpin[i]);
+        prB=prB+meshr[i]*(rpin[i+1]-rpin[i]);
     }
     // set xyz  point numbers till each block
     xb=new int [Mx+1];
@@ -84,7 +86,7 @@ void CylindricalCoordinate::CylindricalMesh_MeshParameterSet2D(){
         rb[0]=0;
         rb[i]=rb[i-1]+(rpin[i]-rpin[i-1])*meshr[i-1];
     }
-    L=px*pr;
+    L=px*prB;
 }
 
 void CylindricalCoordinate::CylindricalMesh_BlockMeshingMesh2D(){
@@ -99,7 +101,7 @@ void CylindricalCoordinate::CylindricalMesh_BlockMeshingMesh2D(){
         double a= xpin[m];
 
         for(int i=xb[m];i<xb[m+1]+1;i++){
-            for (int j=0;j<pr;j++){
+            for (int j=0;j<prB;j++){
                 int pointer = (px)*(j) + (i);
                 mesh[pointer].coordX=a+(i-xb[m])/meshx[m];
             }
@@ -134,7 +136,7 @@ void CylindricalCoordinate::CylindricalMesh_PrintCoordinate2D(string path){
     output <<"--------------------------------------------------------------------------------------------------------------------------------#" << endl;
 
     for (int i=0;i<px;i++){
-        for (int j=0;j<pr;j++){
+        for (int j=0;j<prB;j++){
             int pointer =(px)*(j) + (i);
             output << mesh[pointer].coordX << '\t' <<  mesh[pointer].coordR  << endl;
         }
@@ -147,7 +149,7 @@ void CylindricalCoordinate::CylindricalMesh_PrintMeshParameter2D(){
 
     fstream output;
     output.open("MeshParameter2D.txt", fstream::out | fstream::app);
-    output << "lx="<<lx<< " radius="<<radius<< endl;
+    output << "lx="<<lx<< " lr="<<lr<< " radius="<<radius<< " Tox="<<Tox<< endl;
     output << "Mx="<<Mx<< " Mr="<<Mr<< endl;
 
     for(int i=0;i<Mx+1;i++){
@@ -168,7 +170,7 @@ void CylindricalCoordinate::CylindricalMesh_PrintMeshParameter2D(){
     }
     output <<endl;
 
-    output << "px="<<px<< " pr="<<pr<< endl<< endl;
+    output << "px="<<px<< " prA="<<prA<< " prB="<<prB<< endl<< endl;
     output.close();
 }
 
