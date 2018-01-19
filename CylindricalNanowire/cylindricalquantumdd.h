@@ -22,6 +22,13 @@ struct Semiconductor {
     double Type;//Type 1=channel, 2=SD, 2=Tox;
 };
 
+struct EigenVal {
+    double value;
+    int ang;
+    int mr;
+    int k;
+};
+
 class CylindricalQuantumDD : public CylindricalCoordinate
 {
 
@@ -29,8 +36,8 @@ public:
     CylindricalQuantumDD();
     ~CylindricalQuantumDD();
 
-    void CylQDD_IdVG();
-    void CylQDD_IdVD();
+    void CylQDD_IdVGClassical();
+    void CylQDD_IdVDClassical();
 
     void CylQDD_ParameterSet();
     void CylQDD_NewAndInitialize();
@@ -41,6 +48,8 @@ public:
     double CylQDD_PoissonSolverQD();
     void CylQDD_SchrodingerSolver();
 
+    void CylQDD_SchrodingerPoissonSolver();
+
     double CylQDD_ECSolver();
     //Tool Function
     void CylQDD_PrintMaterial(string path);
@@ -49,10 +58,9 @@ public:
 
     void CylQDD_PrintEigenValues(const char *path);
     void CylQDD_PrintEigenVectors(const char *path, int nb);
-    void CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int mr_index, int angular_index);
-    void CylQDD_PrintEigenVectorsFromStorage(const char *path, int pch_index, int Eigenvalue_index, int mr_index, int angular_index);
+    void CylQDD_PrintEigenValuesFromStorage(const char *path, int pch_index, int ang, int mr);
+    void CylQDD_PrintEigenVectorsFromStorage(const char *path, int pch_index, int ang, int mr, int ki);
 
-    void CylQDD_Update_nr();
 
 private:
 
@@ -72,47 +80,44 @@ private:
     double CylQDD_E(int i, int j);
     double CylQDD_SUM();
 
-    void CylQDD_FindSDboundary();
 
+    void CylQDD_FindSDboundary();
     void CylQDD_BernoulliX();
     double CylQDD_Bern(double dphi, double phi);
     double CylQDD_munCal(double dopping, int f);
     double CylQDD_mupCal(double dopping, int f);
     double CylQDD_tauNCal(double dopping);
     double CylQDD_tauPCal(double dopping);
-    //double CylQDD_SRHrecomb(int i, int j);
+
+    void CylQDD_Update_nr_Classical();
+    void CylQDD_Update_nr_QD();
     double CylQDD_nr(int i, int j);
-    double CylQDD_psi(int i, int j, int k);
-    double CylQDD_nk(int k, int mr, int i, int j);
-    double CylQDD_Ek(int k, int r, int i);
+    double CylQDD_psi(int pchi, int ang, int mr, int k, int j);
+    double CylQDD_nk(int i, int k, int j);
+
+    double CylQDD_Potential(int i, int j);
 
     void CylQDD_DeclareStorageArray();
     void CylQDD_DeclareHamiltonianArray();
-    void CylQDD_AssignHamiltonianArray(int ma, int mr, int pchi);
+    void CylQDD_AssignHamiltonianArray(int ang, int mr, int i);
     void CylQDD_MakeHamiltonianSymmetric();
-    void CylQDD_SolveSchrodinger(int ma, int mr, int pchi);
-    double CylQDD_Potential(int i, int j);
-
+    void CylQDD_SolveSchrodinger();
     void CylQDD_SortEigen_Merge();
     void CylQDD_MergeSort(int low, int high);
     void CylQDD_Merge(int low,int mid,int high);
-
     void CylQDD_SortEigen_Merge_Sheet();
     void CylQDD_MergeSort_Sheet(int low, int high);
     void CylQDD_Merge_Sheet(int low,int mid,int high);
-
     void CylQDD_NormalizeEigenvector();
-
-    void CylQDD_SaveResultC1(int ma, int mr, int pchi);
-    void CylQDD_SaveResultC2(int ma, int mr, int pchi);
+    void CylQDD_SaveResultC(int ma, int mr, int pchi);
 
     void CylQDD_PoissonBC();
     void CylQDD_ECBC();
 
     int CylQDD_SheetValpointer(int ma, int mr, int ki);
-    int CylQDD_C1Valpointer(int ma, int mr, int pchi, int ki);
-    int CylQDD_C1Vecpointer(int ma, int mr, int pchi, int ki, int psi);
-    int CylQDD_C2Valpointer(int ma, int mr, int pchi, int ki);
+    int CylQDD_C1Valpointer(int ang, int mr, int pchi, int k);
+    int CylQDD_C1Vecpointer(int ang, int mr, int pchi, int k, int j);
+    int CylQDD_C2Valpointer(int ang, int mr, int pchi, int k);
 
     void CylQDD_EfieldCalculation();
     void CylQDD_RhoCalculation();
@@ -121,26 +126,25 @@ private:
     void CylQDD_JcalSn_Nanowire(double &JDn);
     void CylQDD_JcalDn_Nanowire(double &JDn);
 
-
 protected:
 
     Semiconductor *DDmaterial;
     MatrixXd H_m, EigenValues_m, EigenVectors_m, T_m, S_m, L_m, Linv_m,HN_m;
-    MatrixXd EigenVectorsN_m, EigenValSheet_m, EigenVecSheet_m;
+    MatrixXd EigenVectorsN_m;
     EigenSolver<MatrixXd> es;
+    EigenVal *EigenValues_C2; //sorted each sheet
 
     int DD_loop, maxIter, DebugMarker;
-    int SBoundary, DBoundary, gridH, pch, Ksubband;
+    int SBoundary, DBoundary, gridH, pch, Ksubband,psheet;
     int m_angular_index;
     double SimTolPoisson, SimTolEC, SimTolHC;
-    double volS, volDe, volDs, volDi, volD, volB, volGe, volGs, volGi, volG, wfG;
+    double volS, volDe, volDs, volDi, volD, volGe, volGs, volGi, volG, wfG;
     double bernXl,Na, Nd, Nai, Ndi, SiNc, SiNv;
     double NaPlus, NdPlus, NaPlusi, NdPlusi;
     double ni_m, ni_cm, ni_nm, Eg, HalfEgn, HalfEgp;
     double Si_ni_m, Si_ni_cm, Si_ni_nm;
     double mun_semi, mup_semi, mun_sub, mup_sub;
     double *EigenValues_C1, *EigenVectors_C1; //unsorted
-    double *EigenValues_C2, *EigenVectors_C2; //sorted each sheet
     double mr1, mr2, gr1, gr2;
     double N1Dr1,N1Dr2;
     double deltax, deltar;

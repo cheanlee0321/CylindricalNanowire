@@ -23,9 +23,9 @@ void CylindricalCoordinate::CylindricalMesh_StructurePatameterSet2D(){
     output << "Device Structure:Cylindrical Nanowire." << endl;
 
     lx=100;
-    radius=10;
+    radius=5;
     SDLength=lx/10;
-    Tox=4;
+    Tox=1;
     lr=radius+Tox;
 
     output << "Nanowire Length="<<lx<< endl;
@@ -61,7 +61,7 @@ void CylindricalCoordinate::CylindricalMesh_MeshParameterSet2D(){
     }
 
     for(int i=0;i<Mr;i++){
-        meshr[i]=1*(i+1);
+        meshr[i]=2*(i+1);
     }
 
 
