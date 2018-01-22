@@ -38,6 +38,8 @@ public:
 
     void CylQDD_IdVGClassical();
     void CylQDD_IdVDClassical();
+    void CylQDD_IdVGQD();
+    void CylQDD_IdVDQD();
 
     void CylQDD_ParameterSet();
     void CylQDD_NewAndInitialize();
@@ -50,7 +52,8 @@ public:
 
     void CylQDD_SchrodingerPoissonSolver();
 
-    double CylQDD_ECSolver();
+    double CylQDD_ECSolverScharfGum();
+    double CylQDD_ECSolverRef();
     //Tool Function
     void CylQDD_PrintMaterial(string path);
     void CylQDD_ReadMaterial(string path);
@@ -70,8 +73,10 @@ private:
     double CylQDD_PoissonGaussSeidelQD();
     double CylQDD_PoissonGaussSeidelInnerQD(int i,int j);
 
-    double CylQDD_ECGaussSeidel();
-    double CylQDD_ECGaussSeidelInner(int i, int j);
+    double CylQDD_ECGaussSeidelScharfGum();
+    double CylQDD_ECGaussSeidelInnerScharfGum(int i, int j);
+    double CylQDD_ECGaussSeidelRef();
+    double CylQDD_ECGaussSeidelInnerRef(int i, int j);
     double CylQDD_G(int i, int j);
     double CylQDD_A(int i, int j);
     double CylQDD_B(int i, int j);
@@ -134,7 +139,7 @@ protected:
     EigenSolver<MatrixXd> es;
     EigenVal *EigenValues_C2; //sorted each sheet
 
-    int DD_loop, maxIter, DebugMarker;
+    int SP_loop, DD_loop, maxIter, DebugMarker;
     int SBoundary, DBoundary, gridH, pch, Ksubband,psheet;
     int m_angular_index;
     double SimTolPoisson, SimTolEC, SimTolHC;

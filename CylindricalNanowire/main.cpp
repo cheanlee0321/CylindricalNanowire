@@ -16,20 +16,40 @@ int main()
     test->CylQDD_NewAndInitialize();
     test->CylQDD_InitialGuess();
     test->CylQDD_PrintMaterial("Initial.txt");
-    test->CylQDD_PoissonSolverClassical();
-    test->CylQDD_PrintMaterial("PoissonClassical.txt");
     //test->CylQDD_ReadMaterial("PoissonClassical.txt");
-    //test->CylQDD_ECSolver();
-    //test->CylQDD_PrintMaterial("ECClassical.txt");
-    //test->CylQDD_IdVGClassical();
+    test->CylQDD_IdVGClassical();
     //test->CylQDD_IdVDClassical();
-    //test->CylQDD_PoissonSolverQD();
     //test->CylQDD_PrintMaterial("PoissonQD.txt");
     //test->CylQDD_ReadMaterial("PoissonClassical.txt");
     //test->CylQDD_PrintMaterial("Read.txt");
-    test->CylQDD_SchrodingerSolver();
-    //test->CylQDD_PrintMaterial("PoissonQD.txt");
+    //test->CylQDD_SchrodingerSolver();
+    //test->CylQDD_IdVGQD();
+    //test->CylQDD_IdVDQD();
+
+    /*
+    test->CylQDD_PoissonSolverClassical();
+    test->CylQDD_PrintMaterial("PoissonClassical1.txt");
+    test->CylQDD_ECSolverScharfGum();
+    test->CylQDD_PrintMaterial("ECClassical1.txt");
+    test->CylQDD_PoissonSolverClassical();
+    test->CylQDD_PrintMaterial("PoissonClassical2.txt");
+    test->CylQDD_ECSolverScharfGum();
+    test->CylQDD_PrintMaterial("ECClassical2.txt");
+
+
     //test->CylQDD_SchrodingerPoissonSolver();
+    //test->CylQDD_PrintMaterial("PoissonQD1.txt");
+    //test->CylQDD_ECSolverScharfGum();
+    //test->CylQDD_PrintMaterial("ECQD1.txt");
+    //test->CylQDD_SchrodingerPoissonSolver();
+    //test->CylQDD_PrintMaterial("PoissonQD2.txt");
+    //test->CylQDD_ECSolverScharfGum();
+    //test->CylQDD_PrintMaterial("ECQD2.txt");
+
+    */
+
+
+    //test->CylQDD_IdVGQD();
 
     /*
     //                                                                    pch  ang mr k

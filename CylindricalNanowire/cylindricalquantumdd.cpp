@@ -27,7 +27,7 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
 
     CylQDD_BernoulliX();
 
-    SimTolEC=SimTolHC=SimTolPoisson=1e-8;
+    SimTolEC=SimTolHC=SimTolPoisson=1e-7;
 
     //voltage
     volS=0;
@@ -48,8 +48,8 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
     //Material
     Na=1e16;  // 1/cm3
     Nd=1e16;  // 1/cm3
-    NaPlus=8e19;  // 1/cm3
-    NdPlus=8e19;  // 1/cm3
+    NaPlus=3e20;  // 1/cm3
+    NdPlus=3e20;  // 1/cm3
 
     SiNc=2*pow(2*M_PI*Si_me*m0*kb*Tamb/pow(h,2),1.5);
     SiNv=2*pow(2*M_PI*Si_mh*m0*kb*Tamb/pow(h,2),1.5);
@@ -87,7 +87,7 @@ void CylindricalQuantumDD::CylQDD_ParameterSet(){
     N1Dr1=sqrt(2*mr1*kb*Tamb/(hbar*hbar))/M_PI; //unit is 1/m, state number per unit length
     N1Dr2=sqrt(2*mr2*kb*Tamb/(hbar*hbar))/M_PI;
 
-    Ksubband=10;
+    Ksubband=3;
 
 
     deltax=1/meshx[0];
@@ -114,7 +114,7 @@ void CylindricalQuantumDD::CylQDD_InitialGuess(){
             //DDmaterial[pointer].phi=(volG-VT*log(0.5*Nai+sqrt(pow(0.5*Nai,2)+1)));
             DDmaterial[pointer].dop=0;
             DDmaterial[pointer].phi=volG;
-            DDmaterial[pointer].psif=volG;
+            DDmaterial[pointer].psif=(volS+volD)/2;
             DDmaterial[pointer].nr=ni_nm*exp((DDmaterial[pointer].phi-DDmaterial[pointer].psif)/VT);
             DDmaterial[pointer].mun=CylQDD_munCal(0, 1); // max Na Nd
             DDmaterial[pointer].mup=CylQDD_mupCal(0, 1);
@@ -202,6 +202,8 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelClassical(){
 
     double max_val=0;
 
+    CylQDD_Update_nr_Classical();
+
 #pragma omp parallel for reduction(max:max_val)
     for (int i=1; i<px-1; i++) {
         for (int j=1; j<prB-1; j++) {
@@ -222,7 +224,6 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelClassical(){
     }
 
     CylQDD_PoissonBC();
-    CylQDD_Update_nr_Classical();
 
     return max_val;
 
@@ -276,6 +277,9 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelQD(){
 
     double max_val=0;
 
+
+    CylQDD_Update_nr_QD();
+
 #pragma omp parallel for reduction(max:max_val)
     for (int i=1; i<px-1; i++) {
         for (int j=1; j<prB-1; j++) {
@@ -311,13 +315,14 @@ double CylindricalQuantumDD::CylQDD_PoissonGaussSeidelInnerQD(int i, int j){
 
     //rho is charge number, Laplace(phi)=(-q)/epsilon*rho
 
-    DDmaterial[pointer].nr=CylQDD_nr(i,j);
+    double rho=(DDmaterial[pointer].nr-ni_nm*DDmaterial[pointer].dop)*(-1)*q0/e0/DDmaterial[pointer].k;
+    double drho=0;
 
-    double rho=DDmaterial[pointer].nr;
+    if(DDmaterial[pointer].Type==2){
+        drho=ni_nm*(exp((DDmaterial[pointer].phi-DDmaterial[pointer].psif)/VT))*(-1)*q0/e0/DDmaterial[pointer].k/VT;
+    }
 
-    double Phi=(CylQDD_A(i,j)+CylQDD_B(i,j)+rho)/CylQDD_SUM();
-
-    return Phi;
+    return (CylQDD_A(i,j)+CylQDD_B(i,j)+rho-drho*DDmaterial[pointer].phi)/(CylQDD_SUM()-drho);
 }
 
 
@@ -491,13 +496,13 @@ double CylindricalQuantumDD::CylQDD_nr(int i, int j){
 
         if(EigenValues_C2[pointerEigen].mr==1){
 
-            //double psi=CylQDD_psi(pchi,EigenValues_C2[pointerEigen].ang,EigenValues_C2[pointerEigen].mr,EigenValues_C2[pointerEigen].k,j);
-            n_sum=n_sum;//+gr1*CylQDD_nk(i,EigenValues_C2[pointerEigen].k,j)*psi*psi;
+            double psi=CylQDD_psi(pchi,EigenValues_C2[pointerEigen].ang,EigenValues_C2[pointerEigen].mr,EigenValues_C2[pointerEigen].k,j);
+            n_sum=n_sum+gr1*CylQDD_nk(i,EigenValues_C2[pointerEigen].k,j)*psi*psi;
 
         }else if(EigenValues_C2[pointerEigen].mr==2){
 
-            //double psi=CylQDD_psi(pchi,EigenValues_C2[pointerEigen].ang,EigenValues_C2[pointerEigen].mr,EigenValues_C2[pointerEigen].k,j);
-            n_sum=n_sum;//+gr2*CylQDD_nk(i,EigenValues_C2[pointerEigen].k,j)*psi*psi;
+            double psi=CylQDD_psi(pchi,EigenValues_C2[pointerEigen].ang,EigenValues_C2[pointerEigen].mr,EigenValues_C2[pointerEigen].k,j);
+            n_sum=n_sum+gr2*CylQDD_nk(i,EigenValues_C2[pointerEigen].k,j)*psi*psi;
 
         }else{
             cout << "undefined mr for nr."<<endl;
@@ -525,9 +530,9 @@ double CylindricalQuantumDD::CylQDD_nk(int i, int k, int j){
 
     if(EigenValues_C2[pointerEigen].mr==1){
         //      DOS       Fermi-Dirac integral -1/2
-        return N1Dr1*gsl_sf_fermi_dirac_mhalf((DDmaterial[pointerDD].psif-EigenValues_C2[pointerEigen].value)/VT)*1e-9; // 1/m * 1e-9 = 1/nm
+        return N1Dr1*gsl_sf_fermi_dirac_mhalf(((-1)*DDmaterial[pointerDD].psif-EigenValues_C2[pointerEigen].value-HalfEgn)/VT)*1e-9; // 1/m * 1e-9 = 1/nm
     }else if(EigenValues_C2[pointerEigen].mr==2){
-        return N1Dr2*gsl_sf_fermi_dirac_mhalf((DDmaterial[pointerDD].psif-EigenValues_C2[pointerEigen].value)/VT)*1e-9; // 1/m * 1e-9 = 1/nm
+        return N1Dr2*gsl_sf_fermi_dirac_mhalf(((-1)*DDmaterial[pointerDD].psif-EigenValues_C2[pointerEigen].value-HalfEgn)/VT)*1e-9; // 1/m * 1e-9 = 1/nm
     }else{
         cout << "undefined r for nk." <<endl;
         exit(0);
@@ -664,28 +669,36 @@ void CylindricalQuantumDD::CylQDD_SchrodingerSolver(){
 
     //Full Sorting C2
     CylQDD_SortEigen_Merge_Sheet();
-    CylQDD_Update_nr_QD();
 }
 
 void CylindricalQuantumDD::CylQDD_SchrodingerPoissonSolver(){
 
     int iter_Phi=0;
 
-    //use classical as initial guess
-    CylQDD_PoissonSolverClassical();
+    SP_loop=0;
 
     do{
+
         //solve wave function
         CylQDD_SchrodingerSolver();
-
-        //update nr
-        CylQDD_Update_nr_QD();
-
         //solve poisson with nr
         CylQDD_PoissonSolverQD();
 
+        /*
+        //Debug
+        stringstream nameQ1;
+        string nameQ2;
+        nameQ1<<"PoissonQD"<<i<<".txt";
+        nameQ2=nameQ1.str();
+        CylQDD_PrintMaterial(nameQ2.c_str());
+        */
         iter_Phi=DD_loop;
 
+        SP_loop++;
+
+        cout << "Schrodinger-Poisson "<< SP_loop <<":"<< iter_Phi<<endl;
+
+    //}while(i<10);
     }while(iter_Phi!=1);
 
 }
@@ -950,6 +963,7 @@ void CylindricalQuantumDD::CylQDD_NormalizeEigenvector(){
 
         double sum=0;
 
+        // 2 pi r dr
         for(int i=0;i<gridH;i++){
             sum=sum+i*deltar*EigenVectors_m(i,j)*EigenVectors_m(i,j)*deltar;
         }
@@ -1045,12 +1059,28 @@ void CylindricalQuantumDD::CylQDD_SaveResultC(int ma, int mr, int pchi){
 
 double CylindricalQuantumDD::CylQDD_Potential(int i, int j){
 
-    //here j start from 1 to gridH
+    /*
+     * The potential unit is qV
+     * Because,
+     *
+     * (-1)*q0*phi = Ei    unit is J
+     * (-1)*phi = Ei/q0    unit is qV
+     *
+     * Si vs SiO2 conduction band difference 3 qV
+     *
+     *                          |
+     *                    3qV   |   SiO2
+     *        Si                |
+     * -------------------------
+     *
+     */
 
+    //here j start from 1 to gridH
     int pointer = (px)*(j) + (i);
 
     if(mesh[pointer].coordR > radius){
-        //Si vs SiO2 conduction band difference 3 eV
+
+
         return (-1)*DDmaterial[pointer].phi + 3.0;
     }else{
         return (-1)*DDmaterial[pointer].phi;
@@ -1200,7 +1230,7 @@ int CylindricalQuantumDD::CylQDD_C2Valpointer(int ang, int mr, int pchi, int k){
     return (1+2*m_angular_index)*(2)*(gridH)*(pchi)+(2)*(gridH)*(ang)+(gridH)*(mr)+k;
 }
 
-double CylindricalQuantumDD::CylQDD_ECSolver(){
+double CylindricalQuantumDD::CylQDD_ECSolverRef(){
 
     DD_loop=0;
     double errEC(0),errEC_max(0);
@@ -1208,7 +1238,7 @@ double CylindricalQuantumDD::CylQDD_ECSolver(){
     do{
         DD_loop++;
 
-        errEC=CylQDD_ECGaussSeidel();
+        errEC=CylQDD_ECGaussSeidelRef();
 
         if(errEC_max < errEC) {errEC_max=errEC;}
 
@@ -1221,7 +1251,7 @@ double CylindricalQuantumDD::CylQDD_ECSolver(){
 
 }
 
-double CylindricalQuantumDD::CylQDD_ECGaussSeidel(){
+double CylindricalQuantumDD::CylQDD_ECGaussSeidelRef(){
 
     double  max_val=0;
 
@@ -1233,7 +1263,7 @@ double CylindricalQuantumDD::CylQDD_ECGaussSeidel(){
 
             double psifk = DDmaterial[pointer].psif;
 
-            DDmaterial[pointer].psif=CylQDD_ECGaussSeidelInner(i,j);
+            DDmaterial[pointer].psif=CylQDD_ECGaussSeidelInnerRef(i,j);
 
             double error=abs(DDmaterial[pointer].psif-psifk);
 
@@ -1250,17 +1280,81 @@ double CylindricalQuantumDD::CylQDD_ECGaussSeidel(){
 
 }
 
-double CylindricalQuantumDD::CylQDD_ECGaussSeidelInner(int i, int j){
+double CylindricalQuantumDD::CylQDD_ECGaussSeidelInnerRef(int i, int j){
     /*
      * return (CylQDD_G(i,j)+CylQDD_C(i,j))/CylQDD_SUM();
      *
+     * This numerical method from the reference:
+     * A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
+     * it does not use Scharfetter-Gummel.
+     * If not using fine meshing, the solver won't work. (I have tried it.)
+     *
+     * The following is its original solver
+     */
+
+    return (CylQDD_G(i,j)+CylQDD_C(i,j))/CylQDD_SUM();
+
+
+}
+
+double CylindricalQuantumDD::CylQDD_ECSolverScharfGum(){
+
+    DD_loop=0;
+    double errEC(0),errEC_max(0);
+
+    do{
+        DD_loop++;
+
+        errEC=CylQDD_ECGaussSeidelScharfGum();
+
+        if(errEC_max < errEC) {errEC_max=errEC;}
+
+        if(DD_loop%1000==0)
+        cout <<"EC:"<< DD_loop <<"\t" <<errEC <<"\t"<<errEC_max<<endl;
+
+    }while(errEC>SimTolEC);
+
+    return errEC_max;
+
+}
+
+double CylindricalQuantumDD::CylQDD_ECGaussSeidelScharfGum(){
+
+    double  max_val=0;
+
+#pragma omp parallel for reduction(max:max_val)
+    for (int i=1; i<px-1; i++) {
+        for (int j=1; j<prA-1; j++) {
+
+            int pointer = (px)*(j) + (i);
+
+            double psifk = DDmaterial[pointer].psif;
+
+            DDmaterial[pointer].psif=CylQDD_ECGaussSeidelInnerScharfGum(i,j);
+
+            double error=abs(DDmaterial[pointer].psif-psifk);
+
+            error=error/(abs(psifk)+1);
+
+            if(error>max_val)
+                max_val=error;
+        }
+    }
+
+    CylQDD_ECBC();
+
+    return max_val;
+
+}
+
+double CylindricalQuantumDD::CylQDD_ECGaussSeidelInnerScharfGum(int i, int j){
+    /*
      * This numerical method from the reference:
      * A 2-D3-D Schrödinger-Poisson Drift-Diffusion Numerical Simulation of Radially-Symmetric Nanowire MOSFETs
      * is not using Scharfetter-Gummel.
      * If not using fine meshing, the simulator won't work. (I havev tried it.)
      *
      * The following is cylindrical coordination Scharfetter-Gummel.
-     *
      */
 
     int pointer = (px)*(j) + (i);
@@ -1366,7 +1460,6 @@ double CylindricalQuantumDD::CylQDD_SUM(){
     return 2*(1/(deltax*deltax)+1/(deltar*deltar));
 }
 
-
 void CylindricalQuantumDD::CylQDD_IdVGClassical(){
 
     int numIter(0);
@@ -1376,7 +1469,9 @@ void CylindricalQuantumDD::CylQDD_IdVGClassical(){
     ofstream  output1;
     ofstream  output2;
 
-    output1.open("Current_IdVg.txt", fstream::out | fstream::trunc);
+    string CurrentFileName="CurrentCl_IdVg.txt";
+
+    output1.open(CurrentFileName, fstream::out | fstream::trunc);
     output1.precision(6);
     output1<<"VoltS="<<volS<<"\t"<<"VoltD="<<volD<<"\t"<<"SimTolPoisson="<<SimTolPoisson<<"\t"<<endl;
     output1<<"Vs(1)"<<"\t"<<"Vg(2)"<<"\t"<<"Vd(3)"<<"\t"<<"J_Sn(A/nm)(4)"<<"\t"<<"J_Dn(A/nm)(5)"<<endl;
@@ -1408,7 +1503,7 @@ void CylindricalQuantumDD::CylQDD_IdVGClassical(){
             output2 <<"Poisson:" << iter_Phi <<"\t"<<errPhi<<"\t";
 
             //electron===========
-            errElec=CylQDD_ECSolver();
+            errElec=CylQDD_ECSolverScharfGum();
             iter_Elec=DD_loop;
             if(errElec>errMax)
                 errMax=errElec;
@@ -1426,11 +1521,11 @@ void CylindricalQuantumDD::CylQDD_IdVGClassical(){
         stringstream name1;
         string name2;
 
-        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<".txt";
+        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<"_Cl.txt";
         name2=name1.str();
         CylQDD_PrintMaterial(name2.c_str());
 
-        CylQDD_Jcal("Current_IdVg.txt");
+        CylQDD_Jcal(CurrentFileName);
 
         index++;
         numIter=0;
@@ -1451,7 +1546,9 @@ void CylindricalQuantumDD::CylQDD_IdVDClassical(){
     ofstream  output1;
     ofstream  output2;
 
-    output1.open("Current_IdVd.txt", fstream::out | fstream::trunc);
+    string CurrentFileName="CurrentCl_IdVd.txt";
+
+    output1.open(CurrentFileName, fstream::out | fstream::trunc);
     output1.precision(6);
     output1<<"Vs(1)"<<"\t"<<"Vg(2)"<<"\t"<<"Vd(3)"<<"\t"<<"J_Sn(A/nm)(4)"<<"\t"<<"J_Sp(A/nm)(5)"<<"\t"<<"J_Dn(A/nm)(6)"<<"\t"<<"J_Dp(A/nm)(7)"
            <<"\t"<<"J_S(A/nm)(8)"<<"\t"<<"J_D(A/nm)(9)"<<"\t"<<"J_Bn(A/nm)(10)"<<"\t"<<"J_Bp(A/nm)(11)"<<"\t"<<"J_B(A/nm)(12)"<<endl;
@@ -1483,7 +1580,7 @@ void CylindricalQuantumDD::CylQDD_IdVDClassical(){
             output2 <<"Poisson:" << iter_Phi <<"\t"<<errPhi<<"\t";
 
             //electron===========
-            errElec=CylQDD_ECSolver();
+            errElec=CylQDD_ECSolverScharfGum();
             iter_Elec=DD_loop;
             if(errElec>errMax)
                 errMax=errElec;
@@ -1502,11 +1599,11 @@ void CylindricalQuantumDD::CylQDD_IdVDClassical(){
         stringstream name1;
         string name2;
 
-        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<".txt";
+        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<"_Cl.txt";
         name2=name1.str();
         CylQDD_PrintMaterial(name2.c_str());
 
-        CylQDD_Jcal("Current_IdVd.txt");
+        CylQDD_Jcal(CurrentFileName);
 
         index++;
         numIter=0;
@@ -1516,6 +1613,160 @@ void CylindricalQuantumDD::CylQDD_IdVDClassical(){
     output2.close();
     cout << "Simulation Process Finished."<<endl;
 }
+
+void CylindricalQuantumDD::CylQDD_IdVGQD(){
+
+    int numIter(0);
+    double errMax(0),errElec(0);
+    int iter_SP(0),iter_Elec(0);
+    int index(0);
+    ofstream  output1;
+    ofstream  output2;
+
+    string CurrentFileName="CurrentQD_IdVg.txt";
+
+    output1.open(CurrentFileName, fstream::out | fstream::trunc);
+    output1.precision(6);
+    output1<<"VoltS="<<volS<<"\t"<<"VoltD="<<volD<<"\t"<<"SimTolPoisson="<<SimTolPoisson<<"\t"<<endl;
+    output1<<"Vs(1)"<<"\t"<<"Vg(2)"<<"\t"<<"Vd(3)"<<"\t"<<"J_Sn(A/nm)(4)"<<"\t"<<"J_Dn(A/nm)(5)"<<endl;
+    output1<<"= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="<<endl;
+    output1.close();
+
+
+    output2.open("convergence.txt", fstream::out | fstream::trunc);
+    output2.precision(10);
+
+    do{
+        volG=(volGi+index*volGs);
+        CylQDD_InitialGuess();
+
+        //pre calculate classical case as an initial guess
+        CylQDD_PoissonSolverClassical();
+
+        output2 <<"Vg="<<volG<<"\t"<<"Vd="<<volD<<endl;
+        output2 <<"========================================================"<<endl;
+
+        do{
+            errMax=0;
+            numIter++;
+            output2<<numIter<<"\t";
+
+            //poisson============
+            CylQDD_SchrodingerPoissonSolver();
+            iter_SP=SP_loop;
+            output2 <<"S-P:" << iter_SP <<"\t";
+
+            //electron===========
+            errElec=CylQDD_ECSolverScharfGum();
+            iter_Elec=DD_loop;
+            if(errElec>errMax)
+                errMax=errElec;
+
+            output2<<"Electron:" << iter_Elec <<"\t"<<errElec<<endl;
+
+        }while( (iter_Elec!=1 || iter_SP!=1) && numIter<maxIter);
+
+        output2<<"= = = iteration stop = = ="<<endl<<endl;
+
+        CylQDD_Update_nr_QD();
+        CylQDD_RhoCalculation();
+        CylQDD_EfieldCalculation();
+
+        stringstream name1;
+        string name2;
+
+        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<"_QD.txt";
+        name2=name1.str();
+        CylQDD_PrintMaterial(name2.c_str());
+
+        CylQDD_Jcal(CurrentFileName);
+
+        index++;
+        numIter=0;
+
+    }while(volGi+index*volGs<(volGe+0.001));
+
+    output2.close();
+    cout << "Simulation Process Finished."<<endl;
+
+}
+
+void CylindricalQuantumDD::CylQDD_IdVDQD(){
+
+    int numIter(0);
+    double errMax(0),errElec(0);
+    int iter_SP(0),iter_Elec(0);
+    int index(0);
+    ofstream  output1;
+    ofstream  output2;
+
+    string CurrentFileName="CurrentQD_IdVd.txt";
+
+    output1.open(CurrentFileName, fstream::out | fstream::trunc);
+    output1.precision(6);
+    output1<<"Vs(1)"<<"\t"<<"Vg(2)"<<"\t"<<"Vd(3)"<<"\t"<<"J_Sn(A/nm)(4)"<<"\t"<<"J_Sp(A/nm)(5)"<<"\t"<<"J_Dn(A/nm)(6)"<<"\t"<<"J_Dp(A/nm)(7)"
+           <<"\t"<<"J_S(A/nm)(8)"<<"\t"<<"J_D(A/nm)(9)"<<"\t"<<"J_Bn(A/nm)(10)"<<"\t"<<"J_Bp(A/nm)(11)"<<"\t"<<"J_B(A/nm)(12)"<<endl;
+    output1<<"= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="<<endl;
+    output1.close();
+
+    output2.open("convergence.txt", fstream::out | fstream::trunc);
+    output2.precision(10);
+
+    do{
+        volD=(volDi+index*volDs);
+        CylQDD_InitialGuess();
+
+        //pre calculate classical case as an initial guess
+        CylQDD_PoissonSolverClassical();
+
+        output2 <<"Vg="<<volG<<"\t"<<"Vd="<<volD<<endl;
+        output2 <<"========================================================"<<endl;
+
+
+        do{
+            errMax=0;
+            numIter++;
+            output2<<numIter<<"\t";
+
+            //poisson============
+            CylQDD_SchrodingerPoissonSolver();
+            iter_SP=SP_loop;
+            output2 <<"S-P:" << iter_SP <<"\t";
+
+            //electron===========
+            errElec=CylQDD_ECSolverScharfGum();
+            iter_Elec=DD_loop;
+            if(errElec>errMax)
+                errMax=errElec;
+
+            output2<<"Electron:" << iter_Elec <<"\t"<<errElec<<endl;
+
+        }while( (iter_Elec!=1 || iter_SP!=1) && numIter<maxIter);
+
+        output2<<"= = = iteration stop = = ="<<endl<<endl;
+
+        CylQDD_Update_nr_QD();
+        CylQDD_RhoCalculation();
+        CylQDD_EfieldCalculation();
+
+        stringstream name1;
+        string name2;
+
+        name1<<"Vg="<<volG<<"_"<<"Vd="<<volD<<"_QD.txt";
+        name2=name1.str();
+        CylQDD_PrintMaterial(name2.c_str());
+
+        CylQDD_Jcal(CurrentFileName);
+
+        index++;
+        numIter=0;
+
+    }while(volDi+index*volDs<volDe+0.001);
+
+    output2.close();
+    cout << "Simulation Process Finished."<<endl;
+}
+
 
 void CylindricalQuantumDD::CylQDD_Update_nr_Classical(){
 
@@ -1530,15 +1781,19 @@ void CylindricalQuantumDD::CylQDD_Update_nr_Classical(){
 
 void CylindricalQuantumDD::CylQDD_Update_nr_QD(){
 
-    //#pragma omp parallel for
-    //for (int i=0;i<px;i++){
-        //for (int j=0;j<prA;j++){
-            //int pointer = (px)*(j) + (i);
-            //int pointer = (px)*(j) + (i);
-            //DDmaterial[pointer].nr=CylQDD_nr(i,j);
-            CylQDD_nr(px/2,0);
-        //}
-    //}
+    #pragma omp parallel for
+    for (int i=0;i<px;i++){
+        for (int j=0;j<prA;j++){
+            int pointer = (px)*(j) + (i);
+            if(DDmaterial[pointer].Type==1){
+                //channel
+                DDmaterial[pointer].nr=CylQDD_nr(i,j);
+            }else if(DDmaterial[pointer].Type==2){
+                //SD
+                DDmaterial[pointer].nr=ni_nm*exp((DDmaterial[pointer].phi-DDmaterial[pointer].psif)/VT);
+            }
+        }
+    }
 }
 
 void CylindricalQuantumDD::CylQDD_RhoCalculation(){
