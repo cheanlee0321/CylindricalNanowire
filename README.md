@@ -36,12 +36,13 @@ Scharfetter-Gummel method
 > Reference 3 : ScharfGum.pdf
 
 
-1. Eigen library is required.
+
+Eigen library is required.
 http://eigen.tuxfamily.org/index.php?title=Main_Page
 
   Download Eigen, copy folder "Eigen" to /usr/local/include  
 
-2. openmp and gsl library is resuqired.
+openmp and gsl library is resuqired.
 
   Install gsl library
 
