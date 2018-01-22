@@ -16,7 +16,7 @@ This simulator explicitly simulate the oxide (not using Robin type boundary appr
 So it could simulate the wave function penetration in Tox.
 
 Btw, I have no idea how to handle 1/r when r=0 in cylindrical coordinate.
-So the the Hamiltonian matrix is not include r=0.
+So the the Hamiltonian matrix does not include r=0.
 
 Schrodinger solver & Poisson solver
 
