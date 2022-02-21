@@ -2,7 +2,7 @@
 
 Nanowire simulator using cylindrical coordinate
 
-# The simulator is still under construction !!
+# The simulator is still under construction
 
 This simulator includes 2D Poisson solver(done), 2D Continuity equation(done), 1D Schrodinger Solver(done).
 
